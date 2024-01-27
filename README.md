@@ -39,3 +39,4 @@ If when trying to build the application, you receive the error "The input line i
 * understand arrow vs point https://www.geeksforgeeks.org/arrow-operator-in-c-c-with-examples/
 * Understand pitch and stride https://learn.microsoft.com/pt-br/windows/win32/medfound/image-stride (tutorial 04)
 * Chandler Carruth - C++ Compiler Optimization
+* Search for XInput (controller api)
