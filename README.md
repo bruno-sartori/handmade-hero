@@ -38,3 +38,4 @@ If when trying to build the application, you receive the error "The input line i
 * Restudy memory in OS and memory allocation in C++
 * understand arrow vs point https://www.geeksforgeeks.org/arrow-operator-in-c-c-with-examples/
 * Understand pitch and stride https://learn.microsoft.com/pt-br/windows/win32/medfound/image-stride (tutorial 04)
+* Chandler Carruth - C++ Compiler Optimization
