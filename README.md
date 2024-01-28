@@ -41,3 +41,5 @@ If when trying to build the application, you receive the error "The input line i
 * Chandler Carruth - C++ Compiler Optimization
 * Search for XInput (controller api)
 * DirectSound is deprecated and replaced by XAudio2
+* Search C Runtime Library
+* Estudar trigonometria
