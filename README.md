@@ -40,3 +40,4 @@ If when trying to build the application, you receive the error "The input line i
 * Understand pitch and stride https://learn.microsoft.com/pt-br/windows/win32/medfound/image-stride (tutorial 04)
 * Chandler Carruth - C++ Compiler Optimization
 * Search for XInput (controller api)
+* DirectSound is deprecated and replaced by XAudio2
