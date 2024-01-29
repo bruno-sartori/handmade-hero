@@ -1,10 +1,25 @@
-#include <dsound.h>
+/*
+  TODO: THIS IS NOT A FINAL PLATFORM LAYER
+
+  - Saved game locations
+  - Getting a handle to our own executable file
+  - Asset loading path
+  - Threading (launch a thread)
+  - Raw Input (support multiple keyboards)
+  - Sleep/timeBeginPeriod
+  - ClipCursor() (multimonitor support)
+  - Fullscreen support
+  - WM_SETCURSOR (control cursor visibility)
+  = QUeryCancelAutoplay
+  - WM_ACTIVATEAPP (for when we are not the active application)
+  - Blit speed improvements (BitBlit)
+  - Hardware Acceleration (OpenGL or Direct3D or both)
+  - GetKeyboardLayout (for french keyboards, international WASD support)
+
+  Just a partial list of stuff!!
+*/
+
 #include <stdint.h>
-#include <windows.h>
-#include <xinput.h>
-// TODO: implement sin function ourselves
-#include <math.h>
-#include <stdio.h>
 
 // static keywords can have multiple behaviours in C++ so we create macros to
 // highlight them
@@ -18,6 +33,15 @@ typedef uint8_t uint8;
 typedef int32_t bool32;
 typedef float real32;
 typedef double real64;
+
+#include "handmade.cpp"
+
+#include <windows.h>
+#include <dsound.h>
+#include <xinput.h>
+#include <math.h> // TODO: implement sin function ourselves
+#include <stdio.h>
+
 
 struct Win32OffscreenBuffer {
   BITMAPINFO Info;
@@ -174,27 +198,6 @@ internal Win32WindowDimension Win32GetWindowDimension(HWND Window) {
   Result.Height = ClientRect.bottom - ClientRect.top;
 
   return Result;
-}
-
-internal void RenderWeirdGradient(Win32OffscreenBuffer* Buffer, int BlueOffset, int GreenOffset) {
-  // TODO: pass a pointer or by value? Lets see what the optimizer does
-
-  uint8* Row = (uint8*)Buffer->Memory;
-
-  for (int Y = 0; Y < Buffer->Height; Y++) {
-    uint32_t* Pixel = (uint32_t*)Row;
-
-    for (int X = 0; X < Buffer->Width; X++) {
-      uint8 Blue = (X + BlueOffset);
-      uint8 Green = (Y + GreenOffset);
-
-      *Pixel++ = ((Green << 8) | Blue);  // understand << (shift) operator
-    }
-
-    Row += Buffer->Pitch;  // This could be Row += (uint8 *)Pixel because pixel
-                           // will point to the end of the row after the for
-                           // loop, but this is more explicit to understand
-  }
 }
 
 // DIB stands for Device Independent Bitmap
@@ -474,8 +477,12 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
           Vibration.wRightMotorSpeed = 60000;
           XInputSetState(0, &Vibration);
         */
-
-        RenderWeirdGradient(&GlobalBackbuffer, XOffset, YOffset);
+        GameOffscreenBuffer Buffer;
+        Buffer.Memory = GlobalBackbuffer.Memory;
+        Buffer.Width = GlobalBackbuffer.Width;
+        Buffer.Height = GlobalBackbuffer.Height;
+        Buffer.Pitch = GlobalBackbuffer.Pitch;
+        GameUpdateAndRender(&Buffer, XOffset, YOffset);
 
         // DirectSound output test
         DWORD PlayCursor;
@@ -508,11 +515,11 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
         real64 MsPerFrame = (((1000.0f * (real64)CounterElapsed) / (real64)PerfCountFrequency));
         real64 FPS = (real64)PerfCountFrequency / (real64)CounterElapsed;
         real64 MegaCyclesPerFrame = ((real64)CyclesElapsed / (1000.0f * 1000.0f));
-
+#if 0
         char OutputBuffer[256];
         sprintf(OutputBuffer, "ms/frame: %.3fms / FPS: %.3f / MC/frame: %.3f \n", MsPerFrame, FPS, MegaCyclesPerFrame);
         OutputDebugStringA(OutputBuffer);
-
+#endif
         LastCycleCount = EndCycleCount;
         LastCounter = EndCounter;
       }
