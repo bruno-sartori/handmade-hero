@@ -4,6 +4,7 @@
 #include <xinput.h>
 // TODO: implement sin function ourselves
 #include <math.h>
+#include <stdio.h>
 
 // static keywords can have multiple behaviours in C++ so we create macros to
 // highlight them
@@ -360,9 +361,11 @@ internal void Win32FillSoundBuffer(Win32SoundOutput* SoundOutput, DWORD ByteToLo
 }
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow) {
+  LARGE_INTEGER PerfCountFrequencyResult;
+  QueryPerformanceFrequency(&PerfCountFrequencyResult);
+  int64_t PerfCountFrequency = PerfCountFrequencyResult.QuadPart;
+
   Win32LoadXInput();
-  // How to use message box
-  // MessageBox(0, "Hello World", "Handmade Hero", MB_OK|MB_ICONINFORMATION);
 
   Win32ResizeDIBSection(&GlobalBackbuffer, 1280, 720);
 
@@ -401,6 +404,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
       SecondaryBuffer->Play(0, 0, DSBPLAY_LOOPING);
 
       Running = true;
+
+      uint64_t LastCycleCount = __rdtsc();
+      LARGE_INTEGER LastCounter;
+      QueryPerformanceCounter(&LastCounter);
 
       while (Running) {
         MSG Message;
@@ -491,6 +498,23 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 
         Win32WindowDimension Dimension = Win32GetWindowDimension(Window);
         Win32DisplayBufferInWindow(&GlobalBackbuffer, DeviceContext, Dimension.Width, Dimension.Height);
+
+        uint64_t EndCycleCount = __rdtsc();
+        LARGE_INTEGER EndCounter;
+        QueryPerformanceCounter(&EndCounter);
+
+        uint64_t CyclesElapsed = EndCycleCount - LastCycleCount;
+        int64_t CounterElapsed = EndCounter.QuadPart - LastCounter.QuadPart;
+        real64 MsPerFrame = (((1000.0f * (real64)CounterElapsed) / (real64)PerfCountFrequency));
+        real64 FPS = (real64)PerfCountFrequency / (real64)CounterElapsed;
+        real64 MegaCyclesPerFrame = ((real64)CyclesElapsed / (1000.0f * 1000.0f));
+
+        char OutputBuffer[256];
+        sprintf(OutputBuffer, "ms/frame: %.3fms / FPS: %.3f / MC/frame: %.3f \n", MsPerFrame, FPS, MegaCyclesPerFrame);
+        OutputDebugStringA(OutputBuffer);
+
+        LastCycleCount = EndCycleCount;
+        LastCounter = EndCounter;
       }
     } else {
       // TODO: log
