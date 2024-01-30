@@ -43,3 +43,4 @@ If when trying to build the application, you receive the error "The input line i
 * DirectSound is deprecated and replaced by XAudio2
 * Search C Runtime Library
 * Estudar trigonometria
+* the internal declaration on functions is made so that the compiler knows that there is no linkage, everything is compiled in one file

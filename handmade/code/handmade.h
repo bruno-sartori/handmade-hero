@@ -21,6 +21,12 @@ typedef int32_t bool32;
 typedef float real32;
 typedef double real64;
 
+// NOTE:
+// TODO:
+// STUDY:
+// IMPORTANT:
+// FIXME:
+
 /*
   INTERNAL:
     0 - Build for public release
@@ -44,10 +50,26 @@ typedef double real64;
 
 #define ArrayCount(Array) (sizeof(Array) / sizeof((Array)[0]))
 
-// Services that the polatform layer provides to the game
+inline uint32 SafeTruncateUInt64(uint64 Value) {
+  Assert(Value <= 0xFFFFFFFF); // uint32 max value
+  uint32 Result = (uint32)Value;
+  return Result;
+}
 
+// ========================================================= SERVICES THAT THE PLATFORM LAYER PROVIDES TO THE GAME
+#if INTERNAL
+struct DEBUGReadFileResult {
+  uint32 ContentsSize;
+  void *Contents;
+};
 
-// Services that the game provides to the platform layer
+internal DEBUGReadFileResult DEBUGPlatformReadEntireFile(CHAR *Filename);
+internal void DEBUGPlatformFreeFileMemory(void *Memory);
+internal bool32 DEBUGPlatformWriteEntireFile(char *Filename, uint32 MemorySize, void *Memory);
+
+#endif
+
+// ========================================================== SERVICES THAT THE GAME PROVIDES TO THE PLATFORM LAYER
 
 struct GameOffscreenBuffer {
   // BITMAPINFO Info;
