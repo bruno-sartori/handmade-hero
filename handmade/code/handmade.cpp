@@ -36,13 +36,35 @@ internal void RenderWeirdGradient(GameOffscreenBuffer* Buffer, int BlueOffset, i
       *Pixel++ = ((Green << 8) | Blue);  // understand << (shift) operator
     }
 
-    Row += Buffer->Pitch;  // This could be Row += (uint8 *)Pixel because pixel
-                           // will point to the end of the row after the for
-                           // loop, but this is more explicit to understand
+    Row += Buffer->Pitch;
   }
 }
 
-internal void GameUpdateAndRender(GameOffscreenBuffer* Buffer, int BlueOffset, int GreenOffset, GameSoundOutputBuffer *SoundBuffer, int ToneHz) {
+
+
+internal void GameUpdateAndRender(GameInput *Input, GameOffscreenBuffer* Buffer, GameSoundOutputBuffer *SoundBuffer) {
+  local_persist int BlueOffset = 0;
+  local_persist int GreenOffset = 0;
+  local_persist int ToneHz = 256;
+
+  GameControllerInput *Input0 = &Input->Controllers[0];
+
+  if (Input0->IsAnalog) {
+    // use analog movement tuning
+    BlueOffset += (int)4.0f*(Input0->EndX);
+    ToneHz = 256 + (int)(128.0f*(Input0->EndY));
+  } else {
+    // use digital movement tuning
+  }
+
+  // Input.AButtonEndedDown;
+  // Input.AButtonHalfTransitionCount;
+
+  if (Input0->Down.EndedDown) {
+    GreenOffset +=1;
+  }
+
+
   // TODO: allow sample offsets here for more robust platform options
   GameOutputSound(SoundBuffer, ToneHz);
   RenderWeirdGradient(Buffer, BlueOffset, GreenOffset);

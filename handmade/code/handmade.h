@@ -21,6 +21,8 @@ typedef int32_t bool32;
 typedef float real32;
 typedef double real64;
 
+#define ArrayCount(Array) (sizeof(Array) / sizeof((Array)[0]))
+
 // Services that the polatform layer provides to the game
 
 
@@ -39,7 +41,50 @@ struct GameSoundOutputBuffer {
   int16 *Samples;
 };
 
-internal void GameUpdateAndRender(GameOffscreenBuffer *Buffer, int BlueOffset, int GreenOffset, GameSoundOutputBuffer *SoundBuffer, int ToneHz); // timing, controller/keyboard input, bitmap buffer, sound buffer
+struct GameButtonState {
+  int HalfTransitionCount;
+  bool32 EndedDown;
+};
+
+
+struct GameControllerInput {
+  bool32 IsAnalog;
+
+  real32 StartX;
+  real32 StartY;
+  real32 MinX;
+  real32 MinY;
+  real32 MaxX;
+  real32 MaxY;
+  real32 EndX;
+  real32 EndY;
+
+  union {
+    GameButtonState Buttons[13];
+    struct {
+      GameButtonState Up;
+      GameButtonState Down;
+      GameButtonState Left;
+      GameButtonState Right;
+      GameButtonState Start;
+      GameButtonState Back;
+      GameButtonState LeftShoulder;
+      GameButtonState RightShoulder;
+      GameButtonState AButton;
+      GameButtonState BButton;
+      GameButtonState XButton;
+      GameButtonState YButton;
+
+      bool32 AButtonEndedDown;
+    };
+  };
+};
+
+struct GameInput {
+  GameControllerInput Controllers[4];
+};
+
+internal void GameUpdateAndRender(GameInput *Input, GameOffscreenBuffer *Buffer, GameSoundOutputBuffer *SoundBuffer); // timing, controller/keyboard input, bitmap buffer, sound buffer
 
 
 
