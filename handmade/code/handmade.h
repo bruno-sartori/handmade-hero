@@ -21,12 +21,34 @@ typedef int32_t bool32;
 typedef float real32;
 typedef double real64;
 
+/*
+  INTERNAL:
+    0 - Build for public release
+    1 - Build for developer only
+
+  SLOW_PERFORMANCE:
+    0 - No slow code allowed
+    1 - Slow code allowed
+*/
+
+#if SLOW_PERFORMANCE
+#define Assert(Expression) if (!(Expression)) {*(int *)0 = 0;} // if expression is false, write to the null pointer, which crashes the program (Platform Independend DebugBreak())
+#else
+#define Assert(Expression)
+#endif
+
+#define Kilobytes(Value) ((Value) * 1024LL)
+#define Megabytes(Value) (Kilobytes(Value) * 1024LL)
+#define Gigabytes(Value) (Megabytes(Value) * 1024LL)
+#define Terabytes(Value) (Gigabytes(Value) * 1024LL)
+
 #define ArrayCount(Array) (sizeof(Array) / sizeof((Array)[0]))
 
 // Services that the polatform layer provides to the game
 
 
 // Services that the game provides to the platform layer
+
 struct GameOffscreenBuffer {
   // BITMAPINFO Info;
   void* Memory;
@@ -45,7 +67,6 @@ struct GameButtonState {
   int HalfTransitionCount;
   bool32 EndedDown;
 };
-
 
 struct GameControllerInput {
   bool32 IsAnalog;
@@ -84,9 +105,22 @@ struct GameInput {
   GameControllerInput Controllers[4];
 };
 
-internal void GameUpdateAndRender(GameInput *Input, GameOffscreenBuffer *Buffer, GameSoundOutputBuffer *SoundBuffer); // timing, controller/keyboard input, bitmap buffer, sound buffer
+struct GameMemory {
+  bool32 IsInitialized;
+  uint64 PermanentStorageSize;
+  void *PermanentStorage; // REQUIRED to be cleared to zero at startup
 
+  uint64 TransientStorageSize;
+  void *TransientStorage; // REQUIRED to be cleared to zero at startup
+};
 
+internal void GameUpdateAndRender(GameMemory *Memory, GameInput *Input, GameOffscreenBuffer *Buffer, GameSoundOutputBuffer *SoundBuffer); // timing, controller/keyboard input, bitmap buffer, sound buffer
+
+struct GameState {
+  int BlueOffset;
+  int GreenOffset;
+  int ToneHz;
+};
 
 #define HANDMADE_H
 #endif
