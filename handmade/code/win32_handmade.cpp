@@ -36,6 +36,7 @@
 global_variable bool32 Running;
 global_variable Win32OffscreenBuffer GlobalBackbuffer;
 global_variable LPDIRECTSOUNDBUFFER SecondaryBuffer;
+global_variable int64 GlobalPerfCountFrequency;
 
 // =================================CONTROLLER FUNCTIONS====================================
 // We are recreating the xinput.h
@@ -213,11 +214,7 @@ internal void Win32InitDSound(HWND Window, int32 SamplesPerSecond, int32 BufferS
 
 internal Win32WindowDimension Win32GetWindowDimension(HWND Window) {
   RECT ClientRect;
-  GetClientRect(
-      Window,
-      &ClientRect);  // gets the RECT of the drawable portion of the client`s
-                     // window (it ignores borders and header bar which is
-                     // controlled by Windows unless its on fullscreen)
+  GetClientRect(Window, &ClientRect);
 
   Win32WindowDimension Result;
   Result.Width = ClientRect.right - ClientRect.left;
@@ -226,7 +223,6 @@ internal Win32WindowDimension Win32GetWindowDimension(HWND Window) {
   return Result;
 }
 
-// DIB stands for Device Independent Bitmap
 internal void Win32ResizeDIBSection(Win32OffscreenBuffer* Buffer, int Width, int Height) {
   // TODO: bulletproof this
   // Maybe dont free first, free after and then free first if that fails
@@ -261,10 +257,7 @@ internal void Win32ResizeDIBSection(Win32OffscreenBuffer* Buffer, int Width, int
   // TODO: Probably clear this to black... why??
 }
 
-internal void Win32DisplayBufferInWindow(Win32OffscreenBuffer* Buffer,
-                                         HDC DeviceContext,
-                                         int WindowWidth,
-                                         int WindowHeight) {
+internal void Win32DisplayBufferInWindow(Win32OffscreenBuffer* Buffer, HDC DeviceContext, int WindowWidth, int WindowHeight) {
   // TODO: fix aspect ratio
   StretchDIBits(DeviceContext, 0, 0, WindowWidth, WindowHeight, 0, 0, Buffer->Width, Buffer->Height, Buffer->Memory, &Buffer->Info, DIB_RGB_COLORS, SRCCOPY);
 }
@@ -421,7 +414,7 @@ internal void Win32ProcessPendingMessages(GameControllerInput* KeyboardControlle
           } else if (VKCode == VK_SPACE) {
             Win32ProcessKeyboardMessage(&KeyboardController->Back, IsDown);
           } else if (VKCode == VK_ESCAPE) {
-             Win32ProcessKeyboardMessage(&KeyboardController->Start, IsDown);
+            Win32ProcessKeyboardMessage(&KeyboardController->Start, IsDown);
           }
         }
 
@@ -450,10 +443,25 @@ internal real32 Win32ProcessXInputStickValue(SHORT Value, SHORT DeadZoneThreshol
   return Result;
 }
 
+inline LARGE_INTEGER Win32GetWallClock() {
+  LARGE_INTEGER Result;
+  QueryPerformanceCounter(&Result);
+  return Result;
+}
+
+inline real32 Win32GetSecondsElapsed(LARGE_INTEGER Start, LARGE_INTEGER End) {
+  real32 Result = ((real32)(End.QuadPart - Start.QuadPart) / (real32)GlobalPerfCountFrequency);
+  return Result;
+}
+
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow) {
   LARGE_INTEGER PerfCountFrequencyResult;
   QueryPerformanceFrequency(&PerfCountFrequencyResult);
-  int64 PerfCountFrequency = PerfCountFrequencyResult.QuadPart;
+  GlobalPerfCountFrequency = PerfCountFrequencyResult.QuadPart;
+
+  // Set the Windows schedules granularity to 1ms so that our Sleep() can be more granular
+  UINT DesiredScheduleMs = 1;
+  bool32 SleepIsGranular = (timeBeginPeriod(DesiredScheduleMs) == TIMERR_NOERROR);
 
   Win32LoadXInput();
 
@@ -465,6 +473,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
   WindowClass.hInstance = hInstance;
   WindowClass.lpszClassName = "HandmadeHeroWindowClass";
   // WindowClass.hIcon;
+
+  int MonitorRefreshHz = 60;
+  int GameUpdateHz = MonitorRefreshHz / 2;
+  real32 TargetSecondsPerFrame = 1.0f / (real32)GameUpdateHz;
 
   if (RegisterClassA(&WindowClass)) {
     HWND Window = CreateWindowExA(0, WindowClass.lpszClassName, "Handmade Hero", WS_OVERLAPPEDWINDOW | WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, 0, 0, hInstance, 0);
@@ -508,9 +520,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
         GameInput* NewInput = &Input[0];
         GameInput* OldInput = &Input[1];
 
+        LARGE_INTEGER LastCounter = Win32GetWallClock();
         uint64 LastCycleCount = __rdtsc();
-        LARGE_INTEGER LastCounter;
-        QueryPerformanceCounter(&LastCounter);
 
         while (Running) {
           // TODO: Zeroing macro
@@ -550,19 +561,19 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
                 NewController->IsAnalog = true;
               }
 
-              if((Pad->wButtons & XINPUT_GAMEPAD_DPAD_UP)) {
+              if ((Pad->wButtons & XINPUT_GAMEPAD_DPAD_UP)) {
                 NewController->StickAverageY = 1.0f;
                 NewController->IsAnalog = false;
               }
-              if((Pad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN)) {
+              if ((Pad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN)) {
                 NewController->StickAverageY = -1.0f;
                 NewController->IsAnalog = false;
               }
-              if((Pad->wButtons & XINPUT_GAMEPAD_DPAD_LEFT)) {
+              if ((Pad->wButtons & XINPUT_GAMEPAD_DPAD_LEFT)) {
                 NewController->StickAverageX = -1.0f;
                 NewController->IsAnalog = false;
               }
-              if((Pad->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT)) {
+              if ((Pad->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT)) {
                 NewController->StickAverageX = 1.0f;
                 NewController->IsAnalog = false;
               }
@@ -625,29 +636,51 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
             Win32FillSoundBuffer(&SoundOutput, ByteToLock, BytesToWrite, &SoundBuffer);
           }
 
+          LARGE_INTEGER WorkCounter = Win32GetWallClock();
+          real32 WorkSecondsElapsed = Win32GetSecondsElapsed(LastCounter, WorkCounter);
+
+          real32 SecondsElapsedForFrame = WorkSecondsElapsed;
+          if (SecondsElapsedForFrame < TargetSecondsPerFrame) {
+            if (SleepIsGranular) {
+              DWORD SleepMS = (DWORD)(1000.0f * (TargetSecondsPerFrame - SecondsElapsedForFrame));
+              if (SleepMS > 0) {
+                Sleep(SleepMS);
+              }
+            }
+
+            real32 TestSecondsElapsedForFrame = Win32GetSecondsElapsed(LastCounter, Win32GetWallClock());
+            Assert(TestSecondsElapsedForFrame < TargetSecondsPerFrame);
+
+            while (SecondsElapsedForFrame < TargetSecondsPerFrame) {
+              SecondsElapsedForFrame = Win32GetSecondsElapsed(LastCounter, Win32GetWallClock());
+            }
+          } else {
+            // TODO: MISSED FRAME RATE
+          }
+
           Win32WindowDimension Dimension = Win32GetWindowDimension(Window);
           Win32DisplayBufferInWindow(&GlobalBackbuffer, DeviceContext, Dimension.Width, Dimension.Height);
-
-          uint64 EndCycleCount = __rdtsc();
-          LARGE_INTEGER EndCounter;
-          QueryPerformanceCounter(&EndCounter);
-
-          uint64 CyclesElapsed = EndCycleCount - LastCycleCount;
-          int64 CounterElapsed = EndCounter.QuadPart - LastCounter.QuadPart;
-          real64 MsPerFrame = (((1000.0f * (real64)CounterElapsed) / (real64)PerfCountFrequency));
-          real64 FPS = (real64)PerfCountFrequency / (real64)CounterElapsed;
-          real64 MegaCyclesPerFrame = ((real64)CyclesElapsed / (1000.0f * 1000.0f));
-#if 0
-        char OutputBuffer[256];
-        sprintf(OutputBuffer, "ms/frame: %.3fms / FPS: %.3f / MC/frame: %.3f \n", MsPerFrame, FPS, MegaCyclesPerFrame);
-        OutputDebugStringA(OutputBuffer);
-#endif
-          LastCycleCount = EndCycleCount;
-          LastCounter = EndCounter;
 
           GameInput* Temp = NewInput;
           NewInput = OldInput;
           OldInput = Temp;
+
+          LARGE_INTEGER EndCounter = Win32GetWallClock();
+          real64 MsPerFrame = 1000.0f * Win32GetSecondsElapsed(LastCounter, EndCounter);
+
+          LastCounter = EndCounter;
+
+          uint64 EndCycleCount = __rdtsc();
+          uint64 CyclesElapsed = EndCycleCount - LastCycleCount;
+          LastCycleCount = EndCycleCount;
+
+          real64 FPS = 0.0f; //(real64)GlobalPerfCountFrequency / (real64)CounterElapsed;
+          real64 MegaCyclesPerFrame = ((real64)CyclesElapsed / (1000.0f * 1000.0f));
+
+          char OutputBuffer[256];
+          sprintf_s(OutputBuffer, "ms/frame: %.3fms / FPS: %.3f / MC/frame: %.3f \n", MsPerFrame, FPS, MegaCyclesPerFrame);
+          OutputDebugStringA(OutputBuffer);
+
         }
       } else {
         // TODO: log
