@@ -30,8 +30,8 @@ internal void RenderWeirdGradient(GameOffscreenBuffer* Buffer, int BlueOffset, i
     uint32* Pixel = (uint32*)Row;
 
     for (int X = 0; X < Buffer->Width; X++) {
-      uint8 Blue = (X + BlueOffset);
-      uint8 Green = (Y + GreenOffset);
+      uint8 Blue = (uint8)(X + BlueOffset);
+      uint8 Green = (uint8)(Y + GreenOffset);
 
       *Pixel++ = ((Green << 8) | Blue);  // understand << (shift) operator
     }
@@ -63,8 +63,8 @@ internal void GameUpdateAndRender(GameMemory *Memory, GameInput *Input, GameOffs
 
   if (Input0->IsAnalog) {
     // use analog movement tuning
-    State->BlueOffset += (int)4.0f*(Input0->EndX);
-    State->ToneHz = 256 + (int)(128.0f*(Input0->EndY));
+    State->BlueOffset += (int)(4.0f * Input0->EndX);
+    State->ToneHz = 256 + (int)(128.0f * Input0->EndY);
   } else {
     // use digital movement tuning
   }
@@ -75,7 +75,6 @@ internal void GameUpdateAndRender(GameMemory *Memory, GameInput *Input, GameOffs
   if (Input0->Down.EndedDown) {
     State->GreenOffset +=1;
   }
-
 
   // TODO: allow sample offsets here for more robust platform options
   GameOutputSound(SoundBuffer, State->ToneHz);
