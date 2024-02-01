@@ -72,7 +72,6 @@ internal bool32 DEBUGPlatformWriteEntireFile(char *Filename, uint32 MemorySize, 
 // ========================================================== SERVICES THAT THE GAME PROVIDES TO THE PLATFORM LAYER
 
 struct GameOffscreenBuffer {
-  // BITMAPINFO Info;
   void* Memory;
   int Width;
   int Height;

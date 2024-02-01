@@ -44,3 +44,5 @@ If when trying to build the application, you receive the error "The input line i
 * Search C Runtime Library
 * Estudar trigonometria
 * the internal declaration on functions is made so that the compiler knows that there is no linkage, everything is compiled in one file
+
+1:00:54

@@ -6,6 +6,7 @@ struct Win32OffscreenBuffer {
   int Width;
   int Height;
   int Pitch;
+  int BytesPerPixel;
 };
 
 struct Win32WindowDimension {
@@ -17,9 +18,14 @@ struct Win32SoundOutput {
   int SamplesPerSecond;
   int RunningSampleIndex;
   int BytesPerSample;
-  int SecondaryBufferSize;
+  DWORD SecondaryBufferSize;
   real32 tSine;
   int LatencySampleCount;
+};
+
+struct Win32DebugTimeMarker {
+  DWORD PlayCursor;
+  DWORD WriteCursor;
 };
 
 #define WIN32_HANDMADE_H
