@@ -143,7 +143,9 @@ struct GameMemory {
   void *TransientStorage; // REQUIRED to be cleared to zero at startup
 };
 
-internal void GameUpdateAndRender(GameMemory *Memory, GameInput *Input, GameOffscreenBuffer *Buffer, GameSoundOutputBuffer *SoundBuffer); // timing, controller/keyboard input, bitmap buffer, sound buffer
+internal void GameUpdateAndRender(GameMemory *Memory, GameInput *Input, GameOffscreenBuffer *Buffer); // timing, controller/keyboard input, bitmap buffer
+// NOTE: At the moment, this has to be a very fast function, less than a millisecond
+internal void GameGetSoundSamples(GameMemory *Memory, GameSoundOutputBuffer *SoundBuffer);
 
 struct GameState {
   int BlueOffset;

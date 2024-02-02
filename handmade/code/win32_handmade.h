@@ -19,13 +19,19 @@ struct Win32SoundOutput {
   int RunningSampleIndex;
   int BytesPerSample;
   DWORD SecondaryBufferSize;
+  DWORD SafetyBytes;
   real32 tSine;
   int LatencySampleCount;
 };
 
 struct Win32DebugTimeMarker {
-  DWORD PlayCursor;
-  DWORD WriteCursor;
+  DWORD OutputPlayCursor;
+  DWORD OutputWriteCursor;
+  DWORD OutputLocation;
+  DWORD OutputByteCount;
+  DWORD ExpectedFlipPlayCursor;
+  DWORD FlipPlayCursor;
+  DWORD FlipWriteCursor;
 };
 
 #define WIN32_HANDMADE_H
