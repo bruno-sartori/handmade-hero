@@ -1,33 +1,26 @@
 #include "handmade.h"
-/*
-DWORD Region1SampleCount = Region1Size / SoundOutput->BytesPerSample;
-int16* SampleOut = (int16*)Region1;
-*/
 
-internal void GameOutputSound(GameSoundOutputBuffer *SoundBuffer, int ToneHz) {
-  local_persist real32 tSine;
+internal void GameOutputSound(GameState *State, GameSoundOutputBuffer *SoundBuffer) {
   int16 ToneVolume = 3000;
-  int WavePeriod = SoundBuffer->SamplesPerSecond / ToneHz;
+  int WavePeriod = SoundBuffer->SamplesPerSecond / State->ToneHz;
   int16 *SampleOut = SoundBuffer->Samples;
 
   for (int SampleIndex = 0; SampleIndex < SoundBuffer->SampleCount; ++SampleIndex) {
-    real32 SineValue = sinf(tSine);
+    real32 SineValue = sinf(State->tSine);
     int16 SampleValue = (int16)(SineValue * ToneVolume);
 
     *SampleOut++ = SampleValue;
     *SampleOut++ = SampleValue;
 
-    tSine += 2.0f * Pi32 * 1.0f / (real32)WavePeriod;
+    State->tSine += 2.0f * Pi32 * 1.0f / (real32)WavePeriod;
 
-    if (tSine > 2.0f * Pi32) {
-      tSine -= 2.0f * Pi32;
+    if (State->tSine > 2.0f * Pi32) {
+      State->tSine -= 2.0f * Pi32;
     }
   }
 }
 
 internal void RenderWeirdGradient(GameOffscreenBuffer *Buffer, int BlueOffset, int GreenOffset) {
-  // TODO: pass a pointer or by value? Lets see what the optimizer does
-
   uint8 *Row = (uint8 *)Buffer->Memory;
 
   for (int Y = 0; Y < Buffer->Height; Y++) {
@@ -44,7 +37,7 @@ internal void RenderWeirdGradient(GameOffscreenBuffer *Buffer, int BlueOffset, i
   }
 }
 
-internal void GameUpdateAndRender(GameMemory *Memory, GameInput *Input, GameOffscreenBuffer *Buffer) {
+extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
   Assert((&Input->Controllers[0].Terminator - &Input->Controllers[0].Buttons[0]) == (ArrayCount(Input->Controllers[0].Buttons)));
   Assert(sizeof(GameState) <= Memory->PermanentStorageSize);
 
@@ -53,14 +46,15 @@ internal void GameUpdateAndRender(GameMemory *Memory, GameInput *Input, GameOffs
   if (!Memory->IsInitialized) {
     char *Filename = __FILE__;
 
-    DEBUGReadFileResult File = DEBUGPlatformReadEntireFile(Filename);
+    DEBUGReadFileResult File = Memory->DEBUGPlatformReadEntireFile(Filename);
 
     if (File.Contents) {
-      DEBUGPlatformWriteEntireFile("test.out", File.ContentsSize, File.Contents);
-      DEBUGPlatformFreeFileMemory(File.Contents);
+      Memory->DEBUGPlatformWriteEntireFile("test.out", File.ContentsSize, File.Contents);
+      Memory->DEBUGPlatformFreeFileMemory(File.Contents);
     }
 
     State->ToneHz = 512;
+    State->tSine = 0.0f;
     Memory->IsInitialized = true;
   }
 
@@ -94,9 +88,14 @@ internal void GameUpdateAndRender(GameMemory *Memory, GameInput *Input, GameOffs
   RenderWeirdGradient(Buffer, State->BlueOffset, State->GreenOffset);
 }
 
-internal void GameGetSoundSamples(GameMemory *Memory, GameSoundOutputBuffer *SoundBuffer) {
-  Assert(sizeof(GameState) <= Memory->PermanentStorageSize);
+extern "C" GAME_GET_SOUND_SAMPLES(GameGetSoundSamples) {
   GameState *State = (GameState *)Memory->PermanentStorage;
-
-  GameOutputSound(SoundBuffer, State->ToneHz);
+  GameOutputSound(State, SoundBuffer);
 }
+
+#if IS_WIN32
+#include "windows.h"
+BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved) {
+  return TRUE;
+}
+#endif

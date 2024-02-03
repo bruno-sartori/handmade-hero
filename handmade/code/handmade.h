@@ -1,32 +1,5 @@
 #if !defined(HANDMADE_H)
 
-// static keywords can have multiple behaviours in C++ so we create macros to
-// highlight them
-#define internal static
-#define local_persist static
-#define global_variable static
-
-#define Pi32 3.14159265359f
-
-typedef int16_t int16;
-typedef int32_t int32;
-typedef int64_t int64;
-
-typedef uint8_t uint8;
-typedef uint16_t uint16;
-typedef uint32_t uint32;
-typedef uint64_t uint64;
-
-typedef int32_t bool32;
-typedef float real32;
-typedef double real64;
-
-// NOTE:
-// TODO:
-// STUDY:
-// IMPORTANT:
-// FIXME:
-
 /*
   INTERNAL:
     0 - Build for public release
@@ -36,6 +9,29 @@ typedef double real64;
     0 - No slow code allowed
     1 - Slow code allowed
 */
+
+#include <math.h>
+#include <stdint.h>
+
+#define internal static
+#define local_persist static
+#define global_variable static
+
+#define Pi32 3.14159265359f
+
+typedef int8_t int8;
+typedef int16_t int16;
+typedef int32_t int32;
+typedef int64_t int64;
+typedef int32_t bool32;
+
+typedef uint8_t uint8;
+typedef uint16_t uint16;
+typedef uint32_t uint32;
+typedef uint64_t uint64;
+
+typedef float real32;
+typedef double real64;
 
 #if SLOW_PERFORMANCE
 #define Assert(Expression) if (!(Expression)) {*(int *)0 = 0;} // if expression is false, write to the null pointer, which crashes the program (Platform Independend DebugBreak())
@@ -58,14 +54,24 @@ inline uint32 SafeTruncateUInt64(uint64 Value) {
 
 // ========================================================= SERVICES THAT THE PLATFORM LAYER PROVIDES TO THE GAME
 #if INTERNAL
+/*
+  IMPORTANT:
+  These are NOT for doing anything in the shipping game - they are
+  blocking and the write doesn't protect against lost data
+*/
 struct DEBUGReadFileResult {
   uint32 ContentsSize;
   void *Contents;
 };
 
-internal DEBUGReadFileResult DEBUGPlatformReadEntireFile(CHAR *Filename);
-internal void DEBUGPlatformFreeFileMemory(void *Memory);
-internal bool32 DEBUGPlatformWriteEntireFile(char *Filename, uint32 MemorySize, void *Memory);
+#define DEBUG_PLATFORM_FREE_FILE_MEMORY(name) void name(void *Memory)
+typedef DEBUG_PLATFORM_FREE_FILE_MEMORY(DEBUG_Platform_Free_File_Memory);
+
+#define DEBUG_PLATFORM_READ_ENTIRE_FILE(name) DEBUGReadFileResult name(char *Filename)
+typedef DEBUG_PLATFORM_READ_ENTIRE_FILE(DEBUG_Platform_Read_Entire_File);
+
+#define DEBUG_PLATFORM_WRITE_ENTIRE_FILE(name) bool32 name(char *Filename, uint32 MemorySize, void *Memory)
+typedef DEBUG_PLATFORM_WRITE_ENTIRE_FILE(DEBUG_Platform_Write_Entire_File);
 
 #endif
 
@@ -137,20 +143,29 @@ inline GameControllerInput *GetController(GameInput *Input, unsigned int Control
 struct GameMemory {
   bool32 IsInitialized;
   uint64 PermanentStorageSize;
-  void *PermanentStorage; // REQUIRED to be cleared to zero at startup
+  void *PermanentStorage; // NOTE: Required to be cleared to zero at startup
 
   uint64 TransientStorageSize;
-  void *TransientStorage; // REQUIRED to be cleared to zero at startup
+  void *TransientStorage; // NOTE: Required to be cleared to zero at startup
+
+  DEBUG_Platform_Free_File_Memory *DEBUGPlatformFreeFileMemory;
+  DEBUG_Platform_Read_Entire_File *DEBUGPlatformReadEntireFile;
+  DEBUG_Platform_Write_Entire_File *DEBUGPlatformWriteEntireFile;
 };
 
-internal void GameUpdateAndRender(GameMemory *Memory, GameInput *Input, GameOffscreenBuffer *Buffer); // timing, controller/keyboard input, bitmap buffer
-// NOTE: At the moment, this has to be a very fast function, less than a millisecond
-internal void GameGetSoundSamples(GameMemory *Memory, GameSoundOutputBuffer *SoundBuffer);
+#define GAME_UPDATE_AND_RENDER(name) void name(GameMemory *Memory, GameInput *Input, GameOffscreenBuffer *Buffer)
+typedef GAME_UPDATE_AND_RENDER(Game_Update_And_Render);
+GAME_UPDATE_AND_RENDER(GameUpdateAndRenderStub) {}
+
+#define GAME_GET_SOUND_SAMPLES(name) void name(GameMemory *Memory, GameSoundOutputBuffer *SoundBuffer)
+typedef GAME_GET_SOUND_SAMPLES(Game_Get_Sound_Samples);
+GAME_GET_SOUND_SAMPLES(GameGetSoundSamplesStub) {}
 
 struct GameState {
   int BlueOffset;
   int GreenOffset;
   int ToneHz;
+  real32 tSine;
 };
 
 #define HANDMADE_H
