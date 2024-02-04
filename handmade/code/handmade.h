@@ -156,11 +156,9 @@ struct GameMemory {
 
 #define GAME_UPDATE_AND_RENDER(name) void name(GameMemory *Memory, GameInput *Input, GameOffscreenBuffer *Buffer)
 typedef GAME_UPDATE_AND_RENDER(Game_Update_And_Render);
-GAME_UPDATE_AND_RENDER(GameUpdateAndRenderStub) {}
 
 #define GAME_GET_SOUND_SAMPLES(name) void name(GameMemory *Memory, GameSoundOutputBuffer *SoundBuffer)
 typedef GAME_GET_SOUND_SAMPLES(Game_Get_Sound_Samples);
-GAME_GET_SOUND_SAMPLES(GameGetSoundSamplesStub) {}
 
 struct GameState {
   int BlueOffset;
