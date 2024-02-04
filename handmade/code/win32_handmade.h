@@ -21,7 +21,6 @@ struct Win32SoundOutput {
   DWORD SecondaryBufferSize;
   DWORD SafetyBytes;
   real32 tSine;
-  int LatencySampleCount;
 };
 
 struct Win32DebugTimeMarker {
@@ -46,13 +45,24 @@ struct Win32GameCode {
 };
 
 #define WIN32_STATE_FILE_NAME_COUNT MAX_PATH
+
+struct Win32ReplayBuffer {
+  HANDLE FileHandle;
+  HANDLE MemoryMap;
+  char FileName[WIN32_STATE_FILE_NAME_COUNT];
+  void* MemoryBlock;
+};
+
 struct Win32State {
   uint64 TotalSize;
   void* GameMemoryBlock;
+  Win32ReplayBuffer ReplayBuffers[4];
+
   HANDLE RecordingHandle;
   int InputRecordingIndex;
   HANDLE PlaybackHandle;
   int InputPlayingIndex;
+
   char EXEFileName[WIN32_STATE_FILE_NAME_COUNT];
   char *OnePastLastEXEFileNameSlash;
 };

@@ -52,6 +52,10 @@ inline uint32 SafeTruncateUInt64(uint64 Value) {
   return Result;
 }
 
+struct ThreadContext {
+  int Placeholder;
+};
+
 // ========================================================= SERVICES THAT THE PLATFORM LAYER PROVIDES TO THE GAME
 #if INTERNAL
 /*
@@ -64,13 +68,13 @@ struct DEBUGReadFileResult {
   void *Contents;
 };
 
-#define DEBUG_PLATFORM_FREE_FILE_MEMORY(name) void name(void *Memory)
+#define DEBUG_PLATFORM_FREE_FILE_MEMORY(name) void name(ThreadContext *Thread, void *Memory)
 typedef DEBUG_PLATFORM_FREE_FILE_MEMORY(DEBUG_Platform_Free_File_Memory);
 
-#define DEBUG_PLATFORM_READ_ENTIRE_FILE(name) DEBUGReadFileResult name(char *Filename)
+#define DEBUG_PLATFORM_READ_ENTIRE_FILE(name) DEBUGReadFileResult name(ThreadContext *Thread, char *Filename)
 typedef DEBUG_PLATFORM_READ_ENTIRE_FILE(DEBUG_Platform_Read_Entire_File);
 
-#define DEBUG_PLATFORM_WRITE_ENTIRE_FILE(name) bool32 name(char *Filename, uint32 MemorySize, void *Memory)
+#define DEBUG_PLATFORM_WRITE_ENTIRE_FILE(name) bool32 name(ThreadContext *Thread, char *Filename, uint32 MemorySize, void *Memory)
 typedef DEBUG_PLATFORM_WRITE_ENTIRE_FILE(DEBUG_Platform_Write_Entire_File);
 
 #endif
@@ -131,6 +135,11 @@ struct GameControllerInput {
 };
 
 struct GameInput {
+  GameButtonState MouseButtons[5];
+  int32 MouseX;
+  int32 MouseY;
+  int32 MouseZ;
+
   GameControllerInput Controllers[5];
 };
 
@@ -154,10 +163,10 @@ struct GameMemory {
   DEBUG_Platform_Write_Entire_File *DEBUGPlatformWriteEntireFile;
 };
 
-#define GAME_UPDATE_AND_RENDER(name) void name(GameMemory *Memory, GameInput *Input, GameOffscreenBuffer *Buffer)
+#define GAME_UPDATE_AND_RENDER(name) void name(ThreadContext *Thread, GameMemory *Memory, GameInput *Input, GameOffscreenBuffer *Buffer)
 typedef GAME_UPDATE_AND_RENDER(Game_Update_And_Render);
 
-#define GAME_GET_SOUND_SAMPLES(name) void name(GameMemory *Memory, GameSoundOutputBuffer *SoundBuffer)
+#define GAME_GET_SOUND_SAMPLES(name) void name(ThreadContext *Thread, GameMemory *Memory, GameSoundOutputBuffer *SoundBuffer)
 typedef GAME_GET_SOUND_SAMPLES(Game_Get_Sound_Samples);
 
 struct GameState {
