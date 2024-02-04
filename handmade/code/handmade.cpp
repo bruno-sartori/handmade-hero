@@ -6,9 +6,12 @@ internal void GameOutputSound(GameState *State, GameSoundOutputBuffer *SoundBuff
   int16 *SampleOut = SoundBuffer->Samples;
 
   for (int SampleIndex = 0; SampleIndex < SoundBuffer->SampleCount; ++SampleIndex) {
+#if 0
     real32 SineValue = sinf(State->tSine);
     int16 SampleValue = (int16)(SineValue * ToneVolume);
-
+#else
+    int16 SampleValue = 0;
+#endif
     *SampleOut++ = SampleValue;
     *SampleOut++ = SampleValue;
 
@@ -37,6 +40,25 @@ internal void RenderWeirdGradient(GameOffscreenBuffer *Buffer, int BlueOffset, i
   }
 }
 
+internal void RenderPlayer(GameOffscreenBuffer *Buffer, int PlayerX, int PlayerY) {
+  uint8 *EndOfBuffer = (uint8 *)Buffer->Memory + Buffer->Pitch * Buffer->Height;
+  uint32 Color = 0xFFFFFFFF;
+  int Top = PlayerY;
+  int Bottom = PlayerY + 10;
+
+  for (int X = PlayerX; X < PlayerX + 10; ++X) {
+    uint8 *Pixel = ((uint8 *)Buffer->Memory + X * Buffer->BytesPerPixel + Top * Buffer->Pitch);
+
+    for (int Y = Top; Y < Bottom; ++Y) {
+      if ((Pixel >= Buffer->Memory) && ((Pixel + 4) <= EndOfBuffer)) {
+        *(uint32 *)Pixel = Color;
+      }
+
+      Pixel += Buffer->Pitch;
+    }
+  }
+}
+
 extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
   Assert((&Input->Controllers[0].Terminator - &Input->Controllers[0].Buttons[0]) == (ArrayCount(Input->Controllers[0].Buttons)));
   Assert(sizeof(GameState) <= Memory->PermanentStorageSize);
@@ -55,6 +77,9 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
 
     State->ToneHz = 512;
     State->tSine = 0.0f;
+    State->PlayerX = 500;
+    State->PlayerY = 500;
+
     Memory->IsInitialized = true;
   }
 
@@ -81,11 +106,20 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
       }
     }
 
-    // Input.AButtonEndedDown;
-    // Input.AButtonHalfTransitionCount;
+    State->PlayerX += (int)(4.0f * Controller->StickAverageX);
+    State->PlayerY -= (int)(4.0f * Controller->StickAverageY);
+    if (State->tJump > 0) {
+      State->PlayerY += (int)(10.0f * sinf(0.5f*Pi32*State->tJump));
+    }
+
+    if (Controller->ActionDown.EndedDown) {
+      State->tJump = 4.0f;
+    }
+    State->tJump -= 0.033f;
   }
 
   RenderWeirdGradient(Buffer, State->BlueOffset, State->GreenOffset);
+  RenderPlayer(Buffer, State->PlayerX, State->PlayerY);
 }
 
 extern "C" GAME_GET_SOUND_SAMPLES(GameGetSoundSamples) {

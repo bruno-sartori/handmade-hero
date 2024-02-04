@@ -10,7 +10,7 @@ pushd ..\..\build
 
 REM 32 Bit Build
 REM call %VcvarsallPath% x86
-REM cl %CommomCompilerFlags% ..\handmade\code\handmade.cpp -Fmhandmade.map /LD /link /EXPORT:GameGetSoundSamples /EXPORT:GameUpdateAndRender
+REM cl %CommomCompilerFlags% ..\handmade\code\handmade.cpp -Fmhandmade.map -LD /link -incremental:no -PDB:handmade_%random%.pdb -EXPORT:GameGetSoundSamples -EXPORT:GameUpdateAndRender
 REM cl %CommonCompilerFlags% ..\handmade\code\win32_handmade.cpp  -Fmwin32_handmade.map /link -subsystem:windows,5.1 %CommonLinkerFlags%
 
 REM 64 Bit Build

@@ -26,6 +26,10 @@ This will open visual studio, once there remember to change "Executable" and "Wo
 
 Then just hit f11 and start debugging!
 
+## Debugging Tools
+* Press P Key to Pause
+* Press L Key to start input loop and L key again to lock the loop
+
 ## Troubleshoot
 
 If when trying to build the application, you receive the error "The input line is too long. The syntax of the command is incorrect." make sure to put the project folder as close as possible to C: and if the error persists just restart your cmd.
