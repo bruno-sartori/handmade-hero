@@ -806,11 +806,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 
         ReplayBuffer->FileHandle = CreateFileA(ReplayBuffer->FileName, GENERIC_WRITE|GENERIC_READ, 0, 0, CREATE_ALWAYS, 0, 0);
 
-// could use LARGE_INTEGER to get the size of the file
-
-        DWORD MaxSizeHigh = (DWORD)(PlatformState.TotalSize >> 32);
-        DWORD MaxSizeLow = (DWORD)(PlatformState.TotalSize & 0XFFFFFFFF);
-        ReplayBuffer->MemoryMap = CreateFileMapping(ReplayBuffer->FileHandle, 0, PAGE_READWRITE, MaxSizeHigh, MaxSizeLow, 0);
+        LARGE_INTEGER MaxSize;
+        MaxSize.QuadPart = PlatformState.TotalSize;
+        ReplayBuffer->MemoryMap = CreateFileMapping(ReplayBuffer->FileHandle, 0, PAGE_READWRITE, MaxSize.HighPart, MaxSize.LowPart, 0);
         DWORD Error = GetLastError();
         ReplayBuffer->MemoryBlock = MapViewOfFile(ReplayBuffer->MemoryMap, FILE_MAP_ALL_ACCESS, 0, 0, PlatformState.TotalSize);
 
