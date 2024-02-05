@@ -730,7 +730,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 
   Win32LoadXInput();
 
-  Win32ResizeDIBSection(&GlobalBackbuffer, 1280, 720);
+  Win32ResizeDIBSection(&GlobalBackbuffer, 960, 540);
 
   WNDCLASSA WindowClass = {};
   WindowClass.style = CS_HREDRAW | CS_VREDRAW;
@@ -822,6 +822,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
         GameInput Input[2] = {};
         GameInput* NewInput = &Input[0];
         GameInput* OldInput = &Input[1];
+
+        NewInput->SecondsToAdvanceOverUpdate = TargetSecondsPerFrame;
 
         LARGE_INTEGER LastCounter = Win32GetWallClock();
         LARGE_INTEGER FlipWallClock = Win32GetWallClock();

@@ -1,7 +1,7 @@
 @echo off
 
 set VcvarsallPath="C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat"
-set CommomCompilerFlags=-MTd -nologo -Gm- -GR- -EHa- -Od -Oi -WX -W4 -wd4201 -wd4100 -wd4189 -wd4456 -DINTERNAL=1 -DSLOW_PERFORMANCE=1 -DIS_WIN32=1 -Z7 -FC
+set CommomCompilerFlags=-MTd -nologo -Gm- -GR- -EHa- -Od -Oi -WX -W4 -wd4201 -wd4100 -wd4189 -wd4456 -wd4505 -DINTERNAL=1 -DSLOW_PERFORMANCE=1 -DIS_WIN32=1 -Z7 -FC
 set CommonLinkerFlags=-incremental:no -opt:ref user32.lib gdi32.lib winmm.lib
 
 IF NOT EXIST ..\..\build mkdir ..\..\build
