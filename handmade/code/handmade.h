@@ -139,7 +139,8 @@ struct GameInput {
   int32 MouseX;
   int32 MouseY;
   int32 MouseZ;
-  real32 SecondsToAdvanceOverUpdate;
+  // delta time for the frame
+  real32 dtForFrame;
   GameControllerInput Controllers[5];
 };
 
@@ -170,7 +171,8 @@ typedef GAME_UPDATE_AND_RENDER(Game_Update_And_Render);
 typedef GAME_GET_SOUND_SAMPLES(Game_Get_Sound_Samples);
 
 struct GameState {
-
+  real32 PlayerX;
+  real32 PlayerY;
 };
 
 #define HANDMADE_H

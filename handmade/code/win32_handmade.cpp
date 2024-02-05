@@ -730,9 +730,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 
   Win32LoadXInput();
 
+  WNDCLASSA WindowClass = {};
+
   Win32ResizeDIBSection(&GlobalBackbuffer, 960, 540);
 
-  WNDCLASSA WindowClass = {};
   WindowClass.style = CS_HREDRAW | CS_VREDRAW;
   WindowClass.lpfnWndProc = Win32MainWindowCallback;
   WindowClass.hInstance = hInstance;
@@ -823,8 +824,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
         GameInput* NewInput = &Input[0];
         GameInput* OldInput = &Input[1];
 
-        NewInput->SecondsToAdvanceOverUpdate = TargetSecondsPerFrame;
-
         LARGE_INTEGER LastCounter = Win32GetWallClock();
         LARGE_INTEGER FlipWallClock = Win32GetWallClock();
 
@@ -840,6 +839,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
         uint64 LastCycleCount = __rdtsc();
 
         while (Running) {
+          NewInput->dtForFrame = TargetSecondsPerFrame;
+
           FILETIME NewDLLWriteTime = GetLastWriteTime(SourceGameCodeDLLFullPath);
           if (CompareFileTime(&NewDLLWriteTime, &Game.DLLLastWriteTime) != 0) {
             Win32UnloadGameCode(&Game);
@@ -1068,6 +1069,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 
               if (TestSecondsElapsedForFrame < TargetSecondsPerFrame) {
                 // TODO: Log Missed sleep here
+                OutputDebugString("Missed sleep\n");
               }
 
               while (SecondsElapsedForFrame < TargetSecondsPerFrame) {
@@ -1107,7 +1109,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
             GameInput* Temp = NewInput;
             NewInput = OldInput;
             OldInput = Temp;
-#if 0
+#if 1
             uint64 EndCycleCount = __rdtsc();
             uint64 CyclesElapsed = EndCycleCount - LastCycleCount;
             LastCycleCount = EndCycleCount;
