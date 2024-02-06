@@ -330,10 +330,19 @@ internal void Win32ResizeDIBSection(Win32OffscreenBuffer* Buffer, int Width, int
 }
 
 internal void Win32DisplayBufferInWindow(Win32OffscreenBuffer* Buffer, HDC DeviceContext, int WindowWidth, int WindowHeight) {
+  int OffsetX = 90;
+  int OffsetY = 90;
+
+  // Paints the rest of the window in black
+  PatBlt(DeviceContext, 0, 0, WindowWidth, OffsetY, BLACKNESS);
+  PatBlt(DeviceContext, 0, OffsetY + Buffer->Height, WindowWidth, WindowHeight, BLACKNESS);
+  PatBlt(DeviceContext, 0, 0, OffsetX, WindowHeight, BLACKNESS);
+  PatBlt(DeviceContext, OffsetX + Buffer->Width, 0, WindowWidth, WindowHeight, BLACKNESS);
+
   // NOTE: For prototyping purposes, we`re going to always blit 1-to-1 pixels to
   // make sure we dont introduce artifacts with stretching while we are learning
   // to code the renderer
-  StretchDIBits(DeviceContext, 0, 0, Buffer->Width, Buffer->Height, 0, 0, Buffer->Width, Buffer->Height, Buffer->Memory, &Buffer->Info, DIB_RGB_COLORS, SRCCOPY);
+  StretchDIBits(DeviceContext, OffsetX, OffsetY, Buffer->Width, Buffer->Height, 0, 0, Buffer->Width, Buffer->Height, Buffer->Memory, &Buffer->Info, DIB_RGB_COLORS, SRCCOPY);
 }
 
 LRESULT CALLBACK Win32MainWindowCallback(HWND Window, UINT Message, WPARAM WParam, LPARAM LParam) {
@@ -810,7 +819,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
         LARGE_INTEGER MaxSize;
         MaxSize.QuadPart = PlatformState.TotalSize;
         ReplayBuffer->MemoryMap = CreateFileMapping(ReplayBuffer->FileHandle, 0, PAGE_READWRITE, MaxSize.HighPart, MaxSize.LowPart, 0);
-        DWORD Error = GetLastError();
         ReplayBuffer->MemoryBlock = MapViewOfFile(ReplayBuffer->MemoryMap, FILE_MAP_ALL_ACCESS, 0, 0, PlatformState.TotalSize);
 
         if(ReplayBuffer->MemoryBlock){
@@ -1077,6 +1085,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
               }
             } else {
               // TODO: MISSED FRAME RATE
+
+                OutputDebugString("Missed frame rate\n");
             }
 
             LARGE_INTEGER EndCounter = Win32GetWallClock();
@@ -1118,7 +1128,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
             real64 MegaCyclesPerFrame = ((real64)CyclesElapsed / (1000.0f * 1000.0f));
 
             char OutputBuffer[256];
-            sprintf_s(OutputBuffer, "ms/frame: %.2fms / FPS: %.2f / MC/frame: %.2f \n", MsPerFrame, FPS, MegaCyclesPerFrame);
+            _snprintf_s(OutputBuffer, sizeof(OutputBuffer), "ms/frame: %.02fms / FPS: %.02f / MC/frame: %.02f \n", MsPerFrame, FPS, MegaCyclesPerFrame);
             OutputDebugStringA(OutputBuffer);
 #endif
 #if INTERNAL
