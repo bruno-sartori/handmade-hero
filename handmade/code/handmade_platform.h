@@ -3,15 +3,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-/*
-  INTERNAL:
-    0 - Build for public release
-    1 - Build for developer only
-
-  SLOW_PERFORMANCE:
-    0 - No slow code allowed
-    1 - Slow code allowed
-*/
 
 #include <stdint.h>
 

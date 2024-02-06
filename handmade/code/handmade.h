@@ -44,23 +44,54 @@ inline GameControllerInput *GetController(GameInput *Input, unsigned int Control
   return Controller;
 }
 
+//
+//
+//
+
+struct CanonicalPosition {
+  // This is in what map we are. Corresponds to map00 map01 etc
+  int32 TileMapX;
+  int32 TileMapY;
+
+  //What tile we are in inside the actual map
+  int32 TileX;
+  int32 TileY;
+
+  // NOTE: This is tile-relative X and Y in pixels
+  real32 TileRelX;
+  real32 TileRelY;
+};
+
+struct RawPosition {
+  // the same as CanonicalPosition
+  int32 TileMapX;
+  int32 TileMapY;
+
+  // NOTE: Absolute pixel coordinates for the whole map
+  real32 X;
+  real32 Y;
+};
+
 struct TileMap {
+  uint32 *Tiles;
+};
+
+struct WorldMap {
   int32 CountX;
   int32 CountY;
   real32 UpperLeftX;
   real32 UpperLeftY;
   real32 TileWidth;
   real32 TileHeight;
-  uint32 *Tiles;
-};
 
-struct WorldMap {
   int32 TileMapCountX;
   int32 TileMapCountY;
   TileMap *TileMaps;
 };
 
 struct GameState {
+  int32 PlayerTileMapX;
+  int32 PlayerTileMapY;
   real32 PlayerX;
   real32 PlayerY;
 };
