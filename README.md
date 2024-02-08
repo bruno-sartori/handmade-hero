@@ -35,7 +35,7 @@ Then just hit f11 and start debugging!
 If when trying to build the application, you receive the error "The input line is too long. The syntax of the command is incorrect." make sure to put the project folder as close as possible to C: and if the error persists just restart your cmd.
 
 
-## Doubts
+## Doubts / Learn
 
 * What is Device Independent Bitmap?
 * What is raster function?
@@ -49,3 +49,5 @@ If when trying to build the application, you receive the error "The input line i
 * Estudar trigonometria
 * the internal declaration on functions is made so that the compiler knows that there is no linkage, everything is compiled in one file
 * What is CLANG?
+* MMX, SSE and SSE2 Instrinsics
+* Intel Intrinsics Guide https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html
