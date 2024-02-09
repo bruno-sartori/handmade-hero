@@ -49,6 +49,8 @@ inline GameControllerInput *GetController(GameInput *Input, unsigned int Control
 //
 
 struct CanonicalPosition {
+
+#if 1
   // This is in what map we are. Corresponds to map00 map01 etc
   int32 TileMapX;
   int32 TileMapY;
@@ -56,20 +58,14 @@ struct CanonicalPosition {
   //What tile we are in inside the actual map
   int32 TileX;
   int32 TileY;
+#else
+  uint32 TileX;
+  uint32 TileY;
+#endif
 
   // NOTE: This is tile-relative X and Y in pixels
   real32 TileRelX;
   real32 TileRelY;
-};
-
-struct RawPosition {
-  // the same as CanonicalPosition
-  int32 TileMapX;
-  int32 TileMapY;
-
-  // NOTE: Absolute pixel coordinates for the whole map
-  real32 X;
-  real32 Y;
 };
 
 struct TileMap {
@@ -79,6 +75,7 @@ struct TileMap {
 struct WorldMap {
   real32 TileSideInMeters;
   int32 TileSideInPixels;
+  real32 MetersToPixels;
 
   int32 CountX;
   int32 CountY;
@@ -91,10 +88,7 @@ struct WorldMap {
 };
 
 struct GameState {
-  int32 PlayerTileMapX;
-  int32 PlayerTileMapY;
-  real32 PlayerX;
-  real32 PlayerY;
+  CanonicalPosition PlayerP;
 };
 
 #define HANDMADE_H

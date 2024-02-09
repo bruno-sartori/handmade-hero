@@ -470,6 +470,7 @@ internal void Win32GetInputFileLocation(Win32State *PlatformState, bool32 InputS
 }
 
 internal Win32ReplayBuffer *Win32GetReplayBuffer(Win32State *PlatformState, int unsigned Index) {
+  Assert(Index > 0);
   Assert(Index < ArrayCount(PlatformState->ReplayBuffers));
   Win32ReplayBuffer *Result = &PlatformState->ReplayBuffers[Index];
   return Result;
@@ -809,7 +810,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
       Memory.PermanentStorage = PlatformState.GameMemoryBlock;
       Memory.TransientStorage = ((uint8*)Memory.PermanentStorage + Memory.PermanentStorageSize);
 
-      for(int ReplayIndex = 0; ReplayIndex < ArrayCount(PlatformState.ReplayBuffers); ++ReplayIndex) {
+      for(int ReplayIndex = 1; ReplayIndex < ArrayCount(PlatformState.ReplayBuffers); ++ReplayIndex) {
         Win32ReplayBuffer* ReplayBuffer = &PlatformState.ReplayBuffers[ReplayIndex];
 
         Win32GetInputFileLocation(&PlatformState, false, ReplayIndex, sizeof(ReplayBuffer->FileName), ReplayBuffer->FileName);
