@@ -48,44 +48,23 @@ inline GameControllerInput *GetController(GameInput *Input, unsigned int Control
 //
 //
 
-struct TileChunkPosition {
-  uint32 TileChunkX;
-  uint32 TileChunkY;
+#include "handmade_intrinsics.h"
+#include "handmade_tile.h"
 
-  uint32 RelTileX;
-  uint32 RelTileY;
-};
-
-struct WorldPosition {
-  uint32 AbsTileX;
-  uint32 AbsTileY;
-
-  // NOTE: This is tile-relative X and Y in ...pixels?
-  real32 TileRelX;
-  real32 TileRelY;
-};
-
-struct TileChunk {
-  uint32 *Tiles;
+struct MemoryArena {
+  memory_index Size;
+  uint8 *Base;
+  memory_index Used;
 };
 
 struct WorldMap {
-  uint32 ChunkShift;
-  uint32 ChunkMask;
-  uint32 ChunkDim;
-
-  real32 TileSideInMeters;
-  int32 TileSideInPixels;
-  real32 MetersToPixels;
-
-  int32 TileChunkCountX;
-  int32 TileChunkCountY;
-
-  TileChunk *TileChunks;
+  TileMap *Map;
 };
 
 struct GameState {
-  WorldPosition PlayerP;
+  MemoryArena WorldArena;
+  WorldMap *World;
+  TileMapPosition PlayerP;
 };
 
 #define HANDMADE_H
