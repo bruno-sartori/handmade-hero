@@ -48,47 +48,44 @@ inline GameControllerInput *GetController(GameInput *Input, unsigned int Control
 //
 //
 
-struct CanonicalPosition {
+struct TileChunkPosition {
+  uint32 TileChunkX;
+  uint32 TileChunkY;
 
-#if 1
-  // This is in what map we are. Corresponds to map00 map01 etc
-  int32 TileMapX;
-  int32 TileMapY;
+  uint32 RelTileX;
+  uint32 RelTileY;
+};
 
-  //What tile we are in inside the actual map
-  int32 TileX;
-  int32 TileY;
-#else
-  uint32 TileX;
-  uint32 TileY;
-#endif
+struct WorldPosition {
+  uint32 AbsTileX;
+  uint32 AbsTileY;
 
-  // NOTE: This is tile-relative X and Y in pixels
+  // NOTE: This is tile-relative X and Y in ...pixels?
   real32 TileRelX;
   real32 TileRelY;
 };
 
-struct TileMap {
+struct TileChunk {
   uint32 *Tiles;
 };
 
 struct WorldMap {
+  uint32 ChunkShift;
+  uint32 ChunkMask;
+  uint32 ChunkDim;
+
   real32 TileSideInMeters;
   int32 TileSideInPixels;
   real32 MetersToPixels;
 
-  int32 CountX;
-  int32 CountY;
-  real32 UpperLeftX;
-  real32 UpperLeftY;
+  int32 TileChunkCountX;
+  int32 TileChunkCountY;
 
-  int32 TileMapCountX;
-  int32 TileMapCountY;
-  TileMap *TileMaps;
+  TileChunk *TileChunks;
 };
 
 struct GameState {
-  CanonicalPosition PlayerP;
+  WorldPosition PlayerP;
 };
 
 #define HANDMADE_H

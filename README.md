@@ -51,3 +51,5 @@ If when trying to build the application, you receive the error "The input line i
 * What is CLANG?
 * MMX, SSE and SSE2 Instrinsics
 * Intel Intrinsics Guide https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html
+* Galois Dream: Gropup theory and differential equations:  https://archive.org/details/galoisdreamgroup0000kuga
+
