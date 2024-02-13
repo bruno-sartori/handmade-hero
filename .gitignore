@@ -1,5 +1,8 @@
-# Build folder
-build
+# Visual Studio Folder
+.vs
+
+# Handmade files
+*.hmi
 
 # Prerequisites
 *.d
