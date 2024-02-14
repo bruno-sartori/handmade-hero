@@ -52,4 +52,5 @@ If when trying to build the application, you receive the error "The input line i
 * MMX, SSE and SSE2 Instrinsics
 * Intel Intrinsics Guide https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html
 * Galois Dream: Gropup theory and differential equations:  https://archive.org/details/galoisdreamgroup0000kuga
-
+* C++ Bit Operations
+* Linear Blend https://youtu.be/S2fz4BS2J3Y?si=6gvYyRmn9Sakj2pw

@@ -92,7 +92,26 @@ internal void DrawBitmap(game_offscreen_buffer *Buffer, loaded_bitmap *Bitmap, r
     uint32 *Dest = (uint32 *)DestRow;
     uint32 *Source = SourceRow;
     for (int X = MinX; X < MaxX; ++X) {
-      *Dest++ = *Source++;
+      real32 A = (real32)((*Source >> 24) & 0xFF) / 255.0f;
+
+      real32 SR = (real32)((*Source >> 16) & 0xFF);
+      real32 SG = (real32)((*Source >> 8) & 0xFF);
+      real32 SB = (real32)((*Source >> 0) & 0xFF);
+
+      real32 DR = (real32)((*Dest >> 16) & 0xFF);
+      real32 DG = (real32)((*Dest >> 8) & 0xFF);
+      real32 DB = (real32)((*Dest >> 0) & 0xFF);
+
+      // TODO: someday, we need to talk about premultiplied alpha!
+      // this is not premultiplied alpha!
+      real32 R = (1.0f-A)*DR + A*SR;
+      real32 G = (1.0f-A)*DG + A*SG;
+      real32 B = (1.0f-A)*DB + A*SB;
+
+      *Dest = (((uint32)(R + 0.5f) << 16) | ((uint32)(G + 0.5f) << 8) | ((uint32)(B + 0.5f) << 0));
+
+      ++Dest;
+      ++Source;
     }
 
     DestRow += Buffer->Pitch;
@@ -134,8 +153,6 @@ struct bitmap_header {
 internal loaded_bitmap DEBUGLoadBMP(thread_context *Thread, debug_platform_read_entire_file *ReadEntireFile, char* FileName) {
   loaded_bitmap Result = {};
 
-  // NOTE: Byte order in memory is AA BB GG RR, bottom up.
-  // In little endian -> 0xRRGGBBAA
   debug_read_file_result ReadResult = ReadEntireFile(Thread, FileName);
   if (ReadResult.ContentsSize != 0) {
     bitmap_header *Header = (bitmap_header *)ReadResult.Contents;
@@ -144,16 +161,37 @@ internal loaded_bitmap DEBUGLoadBMP(thread_context *Thread, debug_platform_read_
     Result.Width = Header->Width;
     Result.Height = Header->Height;
 
+    Assert(Header->Compression == 3);
+
     // NOTE: If you are using this generically for some reason,
     // please remember that BMP files CAN GO IN EITHER DIRECTION and
     // the height will be negative for top-down.
     // Alse, there can be compression, etc. DONT think this is complete
     // BMP loading code because it isnt!!!
+
+
+    // NOTE: Byte order in memory is determined by the Header itself.
+    // So we have to read out the masks and convert the pixels ourselves.
+    uint32 RedMask = Header->RedMask;
+    uint32 GreenMask = Header->GreenMask;
+    uint32 BlueMask = Header->BlueMask;
+    uint32 AlphaMask = ~(RedMask | GreenMask | BlueMask);
+
+    bit_scan_result RedShift = FindLeastSignificantSetBit(RedMask);
+    bit_scan_result GreenShift = FindLeastSignificantSetBit(GreenMask);
+    bit_scan_result BlueShift = FindLeastSignificantSetBit(BlueMask);
+    bit_scan_result AlphaShift = FindLeastSignificantSetBit(AlphaMask);
+
+    Assert(RedShift.Found);
+    Assert(GreenShift.Found);
+    Assert(BlueShift.Found);
+    Assert(AlphaShift.Found);
+
     uint32 *SourceDest = Pixels;
     for (int32 Y = 0; Y < Header->Height; ++Y) {
       for (int32 X = 0; X < Header->Width; ++X) {
-        *SourceDest = (*SourceDest >> 8) | (*SourceDest << 24);
-        ++SourceDest;
+        uint32 C = *SourceDest;
+        *SourceDest++ = ((((C >> AlphaShift.Index) & 0xFF) << 24) | (((C >> RedShift.Index) & 0xFF) << 16) | (((C >> GreenShift.Index) & 0xFF) << 8) | (((C >> BlueShift.Index) & 0xFF) << 0));
       }
     }
   }
@@ -172,7 +210,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
 
   if (!Memory->IsInitialized) {
     GameState->Backdrop = DEBUGLoadBMP(Thread, Memory->DEBUGPlatformReadEntireFile, "test/test_background.bmp");
-    GameState->HeroHead = DEBUGLoadBMP(Thread, Memory->DEBUGPlatformReadEntireFile, "test/test_hero_back_head.bmp");
+    GameState->HeroHead = DEBUGLoadBMP(Thread, Memory->DEBUGPlatformReadEntireFile, "test/test_hero_front_head.bmp");
     GameState->HeroCape = DEBUGLoadBMP(Thread, Memory->DEBUGPlatformReadEntireFile, "test/test_hero_front_cape.bmp");
     GameState->HeroTorso = DEBUGLoadBMP(Thread, Memory->DEBUGPlatformReadEntireFile, "test/test_hero_front_torso.bmp");
 
@@ -412,7 +450,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
   DrawRectangle(Buffer, PlayerLeft, PlayerTop, PlayerLeft + MetersToPixels * PlayerWidth, PlayerTop + MetersToPixels * PlayerHeight, PlayerR, PlayerG, PlayerB);
 
 
-  DrawBitmap(Buffer, &GameState->HeroHead, 0, 0);
+  DrawBitmap(Buffer, &GameState->HeroHead, PlayerLeft, PlayerTop);
   // DrawBitmap(Buffer, &GameState->HeroCape, PlayerLeft, PlayerTop + 50);
   // DrawBitmap(Buffer, &GameState->HeroTorso, PlayerLeft, PlayerTop + 100);
 }
