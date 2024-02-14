@@ -18,6 +18,7 @@
 
   Just a partial list of stuff!!
 */
+#include "handmade_platform.h"
 
 #include <dsound.h>
 #include <malloc.h>
@@ -25,7 +26,6 @@
 #include <windows.h>
 #include <xinput.h>
 
-#include "handmade.h"
 #include "win32_handmade.h"
 
 // TODO: This is a global for now.
@@ -170,23 +170,24 @@ inline FILETIME Win32GetLastWriteTime(char *Filename) {
   return (LastWriteTime);
 }
 
-internal win32_game_code Win32LoadGameCode(char *SourceDLLName, char *TempDLLName) {
+internal win32_game_code Win32LoadGameCode(char *SourceDLLName, char *TempDLLName, char *LockFileName) {
   win32_game_code Result = {};
 
-  // TODO: Need to get the proper path here!
-  // TODO: Automatic determination of when updates are necessary.
+  WIN32_FILE_ATTRIBUTE_DATA Ignored;
+  if (!GetFileAttributesEx(LockFileName, GetFileExInfoStandard, &Ignored)) {
+    Result.DLLLastWriteTime = Win32GetLastWriteTime(SourceDLLName);
 
-  Result.DLLLastWriteTime = Win32GetLastWriteTime(SourceDLLName);
+    CopyFile(SourceDLLName, TempDLLName, FALSE);
 
-  CopyFile(SourceDLLName, TempDLLName, FALSE);
+    Result.GameCodeDLL = LoadLibraryA(TempDLLName);
+    if (Result.GameCodeDLL) {
+      Result.UpdateAndRender = (game_update_and_render *)GetProcAddress(Result.GameCodeDLL, "GameUpdateAndRender");
+      Result.GetSoundSamples = (game_get_sound_samples *)GetProcAddress(Result.GameCodeDLL, "GameGetSoundSamples");
 
-  Result.GameCodeDLL = LoadLibraryA(TempDLLName);
-  if (Result.GameCodeDLL) {
-    Result.UpdateAndRender = (game_update_and_render *)GetProcAddress(Result.GameCodeDLL, "GameUpdateAndRender");
-    Result.GetSoundSamples = (game_get_sound_samples *)GetProcAddress(Result.GameCodeDLL, "GameGetSoundSamples");
-
-    Result.IsValid = (Result.UpdateAndRender && Result.GetSoundSamples);
+      Result.IsValid = (Result.UpdateAndRender && Result.GetSoundSamples);
+    }
   }
+
 
   if (!Result.IsValid) {
     Result.UpdateAndRender = 0;
@@ -755,6 +756,9 @@ int CALLBACK WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CommandLi
   char TempGameCodeDLLFullPath[WIN32_STATE_FILE_NAME_COUNT];
   Win32BuildEXEPathFileName(&Win32State, "handmade_temp.dll", sizeof(TempGameCodeDLLFullPath), TempGameCodeDLLFullPath);
 
+  char GameCodeLockFullPath[WIN32_STATE_FILE_NAME_COUNT];
+  Win32BuildEXEPathFileName(&Win32State, "lock.tmp", sizeof(GameCodeLockFullPath), GameCodeLockFullPath);
+
   // NOTE: Set the Windows scheduler granularity to 1ms
   // so that our Sleep() can be more granular.
   UINT DesiredSchedulerMS = 1;
@@ -884,7 +888,7 @@ int CALLBACK WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CommandLi
         real32 AudioLatencySeconds = 0;
         bool32 SoundIsValid = false;
 
-        win32_game_code Game = Win32LoadGameCode(SourceGameCodeDLLFullPath, TempGameCodeDLLFullPath);
+        win32_game_code Game = Win32LoadGameCode(SourceGameCodeDLLFullPath, TempGameCodeDLLFullPath, GameCodeLockFullPath);
         uint32 LoadCounter = 0;
 
         uint64 LastCycleCount = __rdtsc();
@@ -894,7 +898,7 @@ int CALLBACK WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CommandLi
           FILETIME NewDLLWriteTime = Win32GetLastWriteTime(SourceGameCodeDLLFullPath);
           if (CompareFileTime(&NewDLLWriteTime, &Game.DLLLastWriteTime) != 0) {
             Win32UnloadGameCode(&Game);
-            Game = Win32LoadGameCode(SourceGameCodeDLLFullPath, TempGameCodeDLLFullPath);
+            Game = Win32LoadGameCode(SourceGameCodeDLLFullPath, TempGameCodeDLLFullPath, GameCodeLockFullPath);
             LoadCounter = 0;
           }
 
@@ -1175,7 +1179,7 @@ int CALLBACK WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CommandLi
             OldInput = Temp;
             // TODO: Should I clear these here?
 
-#if 1
+#if 0
             uint64 EndCycleCount = __rdtsc();
             uint64 CyclesElapsed = EndCycleCount - LastCycleCount;
             LastCycleCount = EndCycleCount;

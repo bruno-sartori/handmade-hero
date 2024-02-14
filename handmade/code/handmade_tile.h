@@ -1,5 +1,11 @@
 #if !defined(HANDMADE_TILE_H)
 
+struct tile_map_difference {
+  real32 dX;
+  real32 dY;
+  real32 dZ;
+};
+
 struct tile_map_position {
   // NOTE: These are fixed point tile locations.  The high
   // bits are the tile chunk index, and the low bits are the tile
