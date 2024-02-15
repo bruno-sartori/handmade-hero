@@ -1,5 +1,18 @@
 #if !defined(HANDMADE_PLATFORM_H)
 
+/*
+  NOTE:
+
+  HANDMADE_INTERNAL:
+    0 - Build for public release
+    1 - Build for developer only
+
+  HANDMADE_SLOW:
+    0 - Not slow code allowed!
+    1 - Slow code welcome.
+*/
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif

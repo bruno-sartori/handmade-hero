@@ -54,3 +54,4 @@ If when trying to build the application, you receive the error "The input line i
 * Galois Dream: Gropup theory and differential equations:  https://archive.org/details/galoisdreamgroup0000kuga
 * C++ Bit Operations
 * Linear Blend https://youtu.be/S2fz4BS2J3Y?si=6gvYyRmn9Sakj2pw
+* Raymond Chen - Expert on Windows Platform

@@ -1,17 +1,5 @@
 #if !defined(HANDMADE_H)
 
-/*
-  NOTE:
-
-  HANDMADE_INTERNAL:
-    0 - Build for public release
-    1 - Build for developer only
-
-  HANDMADE_SLOW:
-    0 - Not slow code allowed!
-    1 - Slow code welcome.
-*/
-
 #include "handmade_platform.h"
 
 //
