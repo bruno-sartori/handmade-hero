@@ -55,3 +55,9 @@ If when trying to build the application, you receive the error "The input line i
 * C++ Bit Operations
 * Linear Blend https://youtu.be/S2fz4BS2J3Y?si=6gvYyRmn9Sakj2pw
 * Raymond Chen - Expert on Windows Platform
+
+##Vectors
+
+* Hadamard Product -> only for colors
+* For moiton, we use Dot Product, Perp Dot Product and Cross Product
+

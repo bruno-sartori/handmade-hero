@@ -1,8 +1,7 @@
 #if !defined(HANDMADE_TILE_H)
 
 struct tile_map_difference {
-  real32 dX;
-  real32 dY;
+  v2 dXY;
   real32 dZ;
 };
 
@@ -14,9 +13,8 @@ struct tile_map_position {
   uint32 AbsTileY;
   uint32 AbsTileZ;
 
-  // NOTE: These are the offsets from the tile center
-  real32 OffsetX;
-  real32 OffsetY;
+  // NOTE: This is the offset from the tile center
+  v2 Offset;
 };
 
 struct tile_chunk_position {
