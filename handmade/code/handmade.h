@@ -57,6 +57,9 @@ struct game_state {
   tile_map_position CameraP;
   tile_map_position PlayerP;
 
+  // velocity
+  v2 dPlayerP;
+
   loaded_bitmap Backdrop;
   uint32 FacingDirection;
   hero_bitmaps HeroBitmaps[4];

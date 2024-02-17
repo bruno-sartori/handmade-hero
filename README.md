@@ -61,3 +61,4 @@ If when trying to build the application, you receive the error "The input line i
 * Hadamard Product -> only for colors
 * For moiton, we use Dot Product, Perp Dot Product and Cross Product
 
+rigid body dynamics

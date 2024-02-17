@@ -1,6 +1,6 @@
  win32_handmade
 
- Timestamp is 65cfa627 (Fri Feb 16 15:15:03 2024)
+ Timestamp is 65d0c5a7 (Sat Feb 17 11:41:43 2024)
 
  Preferred load address is 0000000140000000
 
@@ -3361,26 +3361,26 @@
  0002:00000410       ?pre_cpp_initializer@@3P6AXXZEA 0000000140042410     LIBCMTD:exe_winmain.obj
  0002:00000428       ?pre_c_initializer@@3P6AHXZEA 0000000140042428     LIBCMTD:exe_winmain.obj
  0002:00000430       ?post_pgo_initializer@@3P6AHXZEA 0000000140042430     LIBCMTD:exe_winmain.obj
- 0002:000004a0       $SG125784                  00000001400424a0     win32_handmade.obj
- 0002:000004b8       $SG125785                  00000001400424b8     win32_handmade.obj
- 0002:000004d0       $SG125797                  00000001400424d0     win32_handmade.obj
- 0002:000004e0       $SG125799                  00000001400424e0     win32_handmade.obj
- 0002:000004f0       $SG125801                  00000001400424f0     win32_handmade.obj
- 0002:00000500       $SG125804                  0000000140042500     win32_handmade.obj
- 0002:00000510       $SG125806                  0000000140042510     win32_handmade.obj
- 0002:00000520       $SG125828                  0000000140042520     win32_handmade.obj
- 0002:00000530       $SG125831                  0000000140042530     win32_handmade.obj
- 0002:00000548       $SG125840                  0000000140042548     win32_handmade.obj
- 0002:00000568       $SG125842                  0000000140042568     win32_handmade.obj
- 0002:00000590       $SG125897                  0000000140042590     win32_handmade.obj
- 0002:000005c8       $SG125975                  00000001400425c8     win32_handmade.obj
- 0002:000005d0       $SG125976                  00000001400425d0     win32_handmade.obj
- 0002:000005d8       $SG125977                  00000001400425d8     win32_handmade.obj
- 0002:000005f0       $SG126245                  00000001400425f0     win32_handmade.obj
- 0002:00000600       $SG126246                  0000000140042600     win32_handmade.obj
- 0002:00000618       $SG126247                  0000000140042618     win32_handmade.obj
- 0002:00000628       $SG126248                  0000000140042628     win32_handmade.obj
- 0002:00000640       $SG126251                  0000000140042640     win32_handmade.obj
+ 0002:000004a0       $SG125870                  00000001400424a0     win32_handmade.obj
+ 0002:000004b8       $SG125871                  00000001400424b8     win32_handmade.obj
+ 0002:000004d0       $SG125883                  00000001400424d0     win32_handmade.obj
+ 0002:000004e0       $SG125885                  00000001400424e0     win32_handmade.obj
+ 0002:000004f0       $SG125887                  00000001400424f0     win32_handmade.obj
+ 0002:00000500       $SG125890                  0000000140042500     win32_handmade.obj
+ 0002:00000510       $SG125892                  0000000140042510     win32_handmade.obj
+ 0002:00000520       $SG125914                  0000000140042520     win32_handmade.obj
+ 0002:00000530       $SG125917                  0000000140042530     win32_handmade.obj
+ 0002:00000548       $SG125926                  0000000140042548     win32_handmade.obj
+ 0002:00000568       $SG125928                  0000000140042568     win32_handmade.obj
+ 0002:00000590       $SG125983                  0000000140042590     win32_handmade.obj
+ 0002:000005c8       $SG126061                  00000001400425c8     win32_handmade.obj
+ 0002:000005d0       $SG126062                  00000001400425d0     win32_handmade.obj
+ 0002:000005d8       $SG126063                  00000001400425d8     win32_handmade.obj
+ 0002:000005f0       $SG126331                  00000001400425f0     win32_handmade.obj
+ 0002:00000600       $SG126332                  0000000140042600     win32_handmade.obj
+ 0002:00000618       $SG126333                  0000000140042618     win32_handmade.obj
+ 0002:00000628       $SG126334                  0000000140042628     win32_handmade.obj
+ 0002:00000640       $SG126337                  0000000140042640     win32_handmade.obj
  0002:00000680       GS_ExceptionPointers       0000000140042680     LIBCMTD:gs_report.obj
  0002:000006f0       ?tokenTable@@3QBUStringLiteral@@B 00000001400426f0     libvcruntimed:undname.obj
  0002:00000800       ?nameTable@@3QBUStringLiteral@@B 0000000140042800     libvcruntimed:undname.obj

@@ -394,38 +394,47 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
       // NOTE: Use analog movement tuning
     } else {
       // NOTE: Use digital movement tuning
-      v2 dPlayer = {};
+      // NOTE: ddPlayer is Player acceleration
+      v2 ddPlayer = {};
 
       if (Controller->MoveUp.EndedDown) {
         GameState->FacingDirection = 1;
-        dPlayer.Y = 1.0f;
+        ddPlayer.Y = 1.0f;
       }
       if (Controller->MoveDown.EndedDown) {
         GameState->FacingDirection = 3;
-        dPlayer.Y = -1.0f;
+        ddPlayer.Y = -1.0f;
       }
       if (Controller->MoveLeft.EndedDown) {
         GameState->FacingDirection = 2;
-        dPlayer.X = -1.0f;
+        ddPlayer.X = -1.0f;
       }
       if (Controller->MoveRight.EndedDown) {
         GameState->FacingDirection = 0;
-        dPlayer.X = 1.0f;
+        ddPlayer.X = 1.0f;
       }
-      real32 PlayerSpeed = 2.0f;
+      if ((ddPlayer.X != 0.0f) && (ddPlayer.Y != 0.0f)) {
+        ddPlayer *= 0.707106781187f;
+      }
+
+      real32 PlayerSpeed = 10.0f; // m/s^2
       if (Controller->ActionUp.EndedDown) {
-        PlayerSpeed = 10.0f;
+        PlayerSpeed = 30.0f; // m/s^2
       }
+      ddPlayer *= PlayerSpeed;
 
-      dPlayer *= PlayerSpeed;
-
-      if ((dPlayer.X != 0.0f) && (dPlayer.Y != 0.0f)) {
-        dPlayer *= 0.707106781187f;
-      }
-
-      // TODO: Diagonal will be faster!  Fix once we have vectors :)
       tile_map_position NewPlayerP = GameState->PlayerP;
-      NewPlayerP.Offset += Input->dtForFrame * dPlayer;
+
+      // IMPORTANT: total hack, we need Ordinary Differential Equations to properly set friction
+      ddPlayer += -1.5 * GameState->dPlayerP;
+
+      // P' (position) = 1/2at² + vt + P
+      NewPlayerP.Offset = (0.5f * ddPlayer * Square(Input->dtForFrame) +  GameState->dPlayerP * Input->dtForFrame + NewPlayerP.Offset);
+
+      // P'' (velocity) = at + v
+      GameState->dPlayerP = ddPlayer * Input->dtForFrame + GameState->dPlayerP;
+
+
       NewPlayerP = RecanonicalizePosition(TileMap, NewPlayerP);
       // TODO: Delta function that auto-recanonicalizes
 
