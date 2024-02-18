@@ -434,7 +434,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
       // P'' (velocity) = at + v
       GameState->dPlayerP = ddPlayer * Input->dtForFrame + GameState->dPlayerP;
 
-
       NewPlayerP = RecanonicalizePosition(TileMap, NewPlayerP);
       // TODO: Delta function that auto-recanonicalizes
 
@@ -446,7 +445,46 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
       PlayerRight.Offset.X += 0.5f * PlayerWidth;
       PlayerRight = RecanonicalizePosition(TileMap, PlayerRight);
 
-      if (IsTileMapPointEmpty(TileMap, NewPlayerP) && IsTileMapPointEmpty(TileMap, PlayerLeft) && IsTileMapPointEmpty(TileMap, PlayerRight)) {
+      bool32 Collided = false;
+      tile_map_position ColisionP = {};
+      if (!IsTileMapPointEmpty(TileMap, NewPlayerP)) {
+        ColisionP = NewPlayerP;
+        Collided = true;
+      }
+      if (!IsTileMapPointEmpty(TileMap, PlayerLeft)){
+        ColisionP = PlayerLeft;
+        Collided = true;
+      }
+      if (!IsTileMapPointEmpty(TileMap, PlayerRight)) {
+        ColisionP = PlayerRight;
+        Collided = true;
+      }
+
+      if (Collided) {
+        // reflection, also known as normal vector of the surface (new Y coordinate relative to wall (new x))
+        v2 r = {0, 0};
+
+        // moving left, wall is right
+        if (ColisionP.AbsTileX < GameState->PlayerP.AbsTileX) {
+          r = v2{1, 0};
+        }
+        // moving right, wall is left
+        if (ColisionP.AbsTileX > GameState->PlayerP.AbsTileX) {
+          r = v2{-1, 0};
+        }
+        // moving down, wall on top
+        if (ColisionP.AbsTileY < GameState->PlayerP.AbsTileY) {
+          r = v2{0, 1};
+        }
+        // moving up, wall on bottom
+        if (ColisionP.AbsTileY > GameState->PlayerP.AbsTileY) {
+          r = v2{0, -1};
+        }
+
+        // aTb is Inner(a, b)
+        // V' = V - 2 * vTr * r => to bounce on wall colision ( use -1 to slide on wall)
+        GameState->dPlayerP = GameState->dPlayerP - 1 * Inner(GameState->dPlayerP, r) * r;
+      } else {
         if (!AreOnSameTile(&GameState->PlayerP, &NewPlayerP)) {
           uint32 NewTileValue = GetTileValue(TileMap, NewPlayerP);
 
