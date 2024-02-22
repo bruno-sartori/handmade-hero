@@ -5,6 +5,11 @@
 
 #include "math.h"
 
+inline real32 SquareRoot(real32 Real32) {
+  real32 Result = sqrtf(Real32);
+  return Result;
+}
+
 inline real32 AbsoluteValue(real32 Real32) {
   real32 Result = (real32)fabs(Real32);
   return (Result);

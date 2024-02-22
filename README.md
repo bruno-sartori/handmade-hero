@@ -56,6 +56,7 @@ If when trying to build the application, you receive the error "The input line i
 * Linear Blend https://youtu.be/S2fz4BS2J3Y?si=6gvYyRmn9Sakj2pw
 * Raymond Chen - Expert on Windows Platform
 * Agner Fog -> www.agner.org has an list of instruction latencies, throughputs and micro-operation breakdowns for Intel, AMD and VIA CPUs
+* WolframAlpha
 
 ##Vectors
 

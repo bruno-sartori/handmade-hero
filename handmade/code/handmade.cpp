@@ -251,8 +251,10 @@ internal uint32 AddEntity(game_state *GameState) {
 internal void MovePlayer(game_state *GameState, entity *Entity, real32 dt, v2 ddP) {
   tile_map *TileMap = GameState->World->TileMap;
 
-  if ((ddP.X != 0.0f) && (ddP.Y != 0.0f)) {
-    ddP *= 0.707106781187f;
+  real32 ddPLenght = LengthSq(ddP);
+  if (ddPLenght > 1.0f) {
+    // a1x = |a1|ax / |a| => change length of vector without changing its direction
+    ddP *= (1.0f / SquareRoot(ddPLenght));
   }
 
   real32 PlayerSpeed = 50.0f; // m/s^2
@@ -263,6 +265,8 @@ internal void MovePlayer(game_state *GameState, entity *Entity, real32 dt, v2 dd
 
   tile_map_position OldPlayerP = Entity->P;
   tile_map_position NewPlayerP = OldPlayerP;
+
+  // delta between player position and the position it will be if no collision occurs
   v2 PlayerDelta = 0.5f * ddP * Square(dt) + Entity->dP * dt;
 
   // P' (position) = 1/2at² + vt + P => 1/2at² + vt (PlayerDelta) + P (PlayerOffset)
@@ -272,7 +276,7 @@ internal void MovePlayer(game_state *GameState, entity *Entity, real32 dt, v2 dd
 
   NewPlayerP = RecanonicalizePosition(TileMap, NewPlayerP);
   // TODO: Delta function that auto-recanonicalizes
-#if 1
+#if 0
   tile_map_position PlayerLeft = NewPlayerP;
   PlayerLeft.Offset.X -= 0.5f * Entity->Width;
   PlayerLeft = RecanonicalizePosition(TileMap, PlayerLeft);
@@ -325,30 +329,29 @@ internal void MovePlayer(game_state *GameState, entity *Entity, real32 dt, v2 dd
   }
 
 #else
-  uint32 MinTileX = 0;
-  uint32 MinTileY = 0;
-  uint32 OnePastMaxTileX = 0;
-  uint32 OnePastMaxTileY = 0;
+  uint32 MinTileX = Minimum(OldPlayerP.AbsTileX, NewPlayerP.AbsTileX);
+  uint32 MinTileY = Minimum(OldPlayerP.AbsTileY, NewPlayerP.AbsTileY);
+  uint32 OnePastMaxTileX = Maximum(OldPlayerP.AbsTileX, NewPlayerP.AbsTileX) + 1;
+  uint32 OnePastMaxTileY = Maximum(OldPlayerP.AbsTileY, NewPlayerP.AbsTileY) + 1;
   uint32 AbsTileZ = Entity->P.AbsTileZ;
-  tile_map_position BestPlayerP = Entity->P;
-  real32 BestDistanceSq = LengthSq(PlayerDelta);
+
+  real32 tMin = 1.0f;
 
   for(uint32 AbsTileY = MinTileY; AbsTileY != OnePastMaxTileY; ++AbsTileY) {
     for(uint32 AbsTileX = MinTileX; AbsTileX != OnePastMaxTileX; ++AbsTileX) {
       tile_map_position TestTileP = CenteredTilePoint(AbsTileX, AbsTileY, AbsTileZ);
       uint32 TileValue = GetTileValue(TileMap, TestTileP);
-      if (IsTileValueEmpty(TileValue)) {
+      if (!IsTileValueEmpty(TileValue)) {
         v2 MinCorner = -0.5f * v2{ TileMap->TileSideInMeters, TileMap->TileSideInMeters };
         v2 MaxCorner = 0.5f * v2{ TileMap->TileSideInMeters, TileMap->TileSideInMeters };
 
         tile_map_difference RelNewPlayerP = Subtract(TileMap, &TestTileP, &NewPlayerP);
-        v2 TestP = ClosestPointInRectangle(MinCorner, MaxCorner, RelNewPlayerP);
+        v2 Rel = RelNewPlayerP.dXY;
 
-        TestDistanceSq = ;
-        if (BestDistanceSq > TestDistanceSq) {
-          BestPlayerP = ;
-          BestDistanceSq = ;
-        }
+        // TODO: Test all four walls and take the minimum Z.
+        // ts = (wx - p0x) / dx
+        tResult = (WallX - RelNewPlayerP.dXY.X) / PlayerDelta.X;
+        TestWall(MinCorner.X, MinCorner.Y, MaxCorner.Y, RelNewPlayerP.dXY.X);
       }
     }
   }
