@@ -110,9 +110,9 @@ inline void RecanonicalizeCoord(tile_map *TileMap, uint32 *Tile, real32 *TileRel
   *Tile += Offset;
   *TileRel -= Offset * TileMap->TileSideInMeters;
 
-  // TODO: Fix floating point math so this can be < ?
-  Assert(*TileRel >= -0.5f * TileMap->TileSideInMeters);
-  Assert(*TileRel <= 0.5f * TileMap->TileSideInMeters);
+  // TODO: Fix floating point math so this can be exact?
+  Assert(*TileRel >= -0.5001f * TileMap->TileSideInMeters);
+  Assert(*TileRel <= 0.5001f * TileMap->TileSideInMeters);
 }
 
 inline tile_map_position RecanonicalizePosition(tile_map *TileMap, tile_map_position Pos) {
