@@ -157,3 +157,9 @@ inline tile_map_position CenteredTilePoint(uint32 AbsTileX, uint32 AbsTileY, uin
 
   return Result;
 }
+
+inline tile_map_position Offset(tile_map *TileMap, tile_map_position P, v2 Offset) {
+  P.Offset += Offset;
+  P = RecanonicalizePosition(TileMap, P);
+  return P;
+}
