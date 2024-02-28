@@ -324,8 +324,7 @@ internal uint32 AddPlayer(game_state *GameState) {
   uint32 EntityIndex = AddLowEntity(GameState, EntityType_Hero);
   low_entity *EntityLow = GetLowEntity(GameState, EntityIndex);
 
-  EntityLow->P.AbsTileX = 1;
-  EntityLow->P.AbsTileY = 3;
+  EntityLow->P = GameState->CameraP;
   EntityLow->P.Offset.X = 0;
   EntityLow->P.Offset.Y = 0;
   EntityLow->Height = 0.5f; // 1.4f;
@@ -487,10 +486,10 @@ internal void SetCamera(game_state *GameState, tile_map_position NewCameraP) {
   v2 EntityOffsetForFrame = -dCameraP.dXY;
   OffsetAndCheckFrequencyByArea(GameState, EntityOffsetForFrame, CameraBounds);
 
-  uint32 MinTileX = NewCameraP.AbsTileX - TileSpanX / 2;
-  uint32 MaxTileX = NewCameraP.AbsTileX + TileSpanX / 2;
-  uint32 MinTileY = NewCameraP.AbsTileY - TileSpanY / 2;
-  uint32 MaxTileY = NewCameraP.AbsTileY + TileSpanY / 2;
+  int32 MinTileX = NewCameraP.AbsTileX - TileSpanX / 2;
+  int32 MaxTileX = NewCameraP.AbsTileX + TileSpanX / 2;
+  int32 MinTileY = NewCameraP.AbsTileY - TileSpanY / 2;
+  int32 MaxTileY = NewCameraP.AbsTileY + TileSpanY / 2;
 
   for (uint32 EntityIndex = 1; EntityIndex < GameState->LowEntityCount; ++EntityIndex) {
     low_entity *Low = GameState->LowEntities + EntityIndex;
@@ -500,8 +499,8 @@ internal void SetCamera(game_state *GameState, tile_map_position NewCameraP) {
         (Low->P.AbsTileZ == NewCameraP.AbsTileZ) &&
         (Low->P.AbsTileX >= MinTileX) &&
         (Low->P.AbsTileX <= MaxTileX) &&
-        (Low->P.AbsTileY <= MinTileY) &&
-        (Low->P.AbsTileY >= MaxTileY)
+        (Low->P.AbsTileY >= MinTileY) &&
+        (Low->P.AbsTileY <= MaxTileY)
       ) {
         MakeEntityHighFrequency(GameState, EntityIndex);
       }
@@ -563,29 +562,17 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
 
     tile_map *TileMap = World->TileMap;
 
-    TileMap->ChunkShift = 4;
-    TileMap->ChunkMask = (1 << TileMap->ChunkShift) - 1;
-    TileMap->ChunkDim = (1 << TileMap->ChunkShift);
-
-    TileMap->TileChunkCountX = 128;
-    TileMap->TileChunkCountY = 128;
-    TileMap->TileChunkCountZ = 2;
-    TileMap->TileChunks = PushArray(&GameState->WorldArena, TileMap->TileChunkCountX * TileMap->TileChunkCountY * TileMap->TileChunkCountZ, tile_chunk);
-
-    TileMap->TileSideInMeters = 1.4f;
+    InitializeTileMap(TileMap, 1.4f);
 
     uint32 RandomNumberIndex = 0;
     uint32 TilesPerWidth = 17;
     uint32 TilesPerHeight = 9;
-#if 0
-    // TODO: Waiting for full sparseness
-    uint32 ScreenX = INT32_MAX / 2;
-    uint32 ScreenY = INT32_MAX / 2;
-#else
-    uint32 ScreenX = 0;
-    uint32 ScreenY = 0;
-#endif
-    uint32 AbsTileZ = 0;
+    uint32 ScreenBaseX = 0;
+    uint32 ScreenBaseY = 0;
+    uint32 ScreenBaseZ = 0;
+    uint32 ScreenX = ScreenBaseX;
+    uint32 ScreenY = ScreenBaseY;
+    uint32 AbsTileZ = ScreenBaseZ;
 
     // TODO: Replace all this with real world generation!
     bool32 DoorLeft = false;
@@ -609,7 +596,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
       bool32 CreatedZDoor = false;
       if (RandomChoice == 2) {
         CreatedZDoor = true;
-        if (AbsTileZ == 0) {
+        if (AbsTileZ == ScreenBaseZ) {
           DoorUp = true;
         } else {
           DoorDown = true;
@@ -671,10 +658,10 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
       DoorTop = false;
 
       if (RandomChoice == 2) {
-        if (AbsTileZ == 0) {
-          AbsTileZ = 1;
+        if (AbsTileZ == ScreenBaseZ) {
+          AbsTileZ = ScreenBaseZ + 1;
         } else {
-          AbsTileZ = 0;
+          AbsTileZ = ScreenBaseZ;
         }
       } else if (RandomChoice == 1) {
         ScreenX += 1;
@@ -684,8 +671,9 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
     }
 
     tile_map_position NewCameraP = {};
-    NewCameraP.AbsTileX = 17 / 2;
-    NewCameraP.AbsTileY = 9 / 2;
+    NewCameraP.AbsTileX = ScreenBaseX * TilesPerWidth + 17 / 2;
+    NewCameraP.AbsTileY = ScreenBaseY * TilesPerHeight + 9 / 2;
+    NewCameraP.AbsTileZ = ScreenBaseZ;
     SetCamera(GameState, NewCameraP);
 
     Memory->IsInitialized = true;
