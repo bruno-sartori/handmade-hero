@@ -89,7 +89,7 @@ inline void RecanonicalizeCoord(world *World, int32 *Tile, real32 *TileRel) {
   Assert(IsCanonical(World, *TileRel));
 }
 
-inline world_position MapIntoTileSpace(world *World, world_position BasePos, v2 Offset) {
+inline world_position MapIntoChunkSpace(world *World, world_position BasePos, v2 Offset) {
   world_position Result = BasePos;
 
   Result.Offset += Offset;
@@ -106,6 +106,7 @@ inline world_position ChunkPositionFromTilePosition(world *World, int32 AbsTileX
   Result.ChunkY = AbsTileY / TILES_PER_CHUNK;
   Result.ChunkZ = AbsTileZ / TILES_PER_CHUNK;
 
+  // TODO: Decide on tile alignment in chunks!
   Result.Offset.X = (real32)(AbsTileX - (Result.ChunkX * TILES_PER_CHUNK)) * World->TileSideInMeters;
   Result.Offset.Y = (real32)(AbsTileY - (Result.ChunkY * TILES_PER_CHUNK)) * World->TileSideInMeters;
   // TODO: Move to 3D Z!
@@ -151,9 +152,10 @@ inline void ChangeEntityLocation(memory_arena *Arena, world *World, uint32 LowEn
       Assert(Chunk);
 
       if (Chunk) {
+        bool32 NotFound = true;
         world_entity_block *FirstBlock = &Chunk->FirstBlock;
-        for (world_entity_block *Block = FirstBlock; Block; Block = Block->Next) { // Single Linked List
-          for(uint32 Index = 0; Index < Block->EntityCount; ++Index) {
+        for (world_entity_block *Block = FirstBlock; Block && NotFound; Block = Block->Next) { // Single Linked List
+          for(uint32 Index = 0; (Index < Block->EntityCount) && NotFound; ++Index) {
             if (Block->LowEntityIndex[Index] == LowEntityIndex) {
               Assert(FirstBlock->EntityCount > 0);
               Block->LowEntityIndex[Index] = FirstBlock->LowEntityIndex[--FirstBlock->EntityCount];
@@ -167,8 +169,7 @@ inline void ChangeEntityLocation(memory_arena *Arena, world *World, uint32 LowEn
                 }
               }
 
-              Block = 0;
-              break;
+              NotFound = false;
             }
           }
         }
