@@ -3,6 +3,20 @@
 #define TILE_CHUNK_UNINITIALIZED INT32_MAX
 #define TILES_PER_CHUNK 16
 
+inline world_position NullPosition() {
+  world_position Result = {};
+
+  Result.ChunkX = TILE_CHUNK_UNINITIALIZED;
+
+  return Result;
+}
+
+inline bool32 IsValid(world_position P) {
+  bool32 Result = (P.ChunkX != TILE_CHUNK_UNINITIALIZED);
+
+  return Result;
+}
+
 inline bool32 IsCanonical(world *World, real32 TileRel) {
   // TODO: Fix floating point math so this can be exact?
   bool32 Result = (TileRel >= -0.5f * World->ChunkSideInMeters) && (TileRel <= 0.5f * World->ChunkSideInMeters);
@@ -155,7 +169,12 @@ inline world_position CenteredChunkPoint(uint32 ChunkX, uint32 ChunkY, uint32 Ch
   return Result;
 }
 
-inline void ChangeEntityLocation(memory_arena *Arena, world *World, uint32 LowEntityIndex, world_position *OldP, world_position *NewP) {
+inline void ChangeEntityLocationRaw(memory_arena *Arena, world *World, uint32 LowEntityIndex, world_position *OldP, world_position *NewP) {
+  // TODO: If this moves an entity into the camera bounds, should it automatically go into the high set immediatly?
+
+  Assert(!OldP || IsValid(*OldP));
+  Assert(!NewP || IsValid(*NewP));
+
   if (OldP && AreInSameChunk(World, OldP, NewP)) {
     // NOTE: Leave entity where it is
   } else {
@@ -189,25 +208,37 @@ inline void ChangeEntityLocation(memory_arena *Arena, world *World, uint32 LowEn
       }
     }
 
-    // NOTE: Insert the entity into its new entity block
-    world_chunk *Chunk = GetWorldChunk(World, NewP->ChunkX, NewP->ChunkY, NewP->ChunkZ, Arena);
-    Assert(Chunk);
-    world_entity_block *Block = &Chunk->FirstBlock;
-    if (Block->EntityCount == ArrayCount(Block->LowEntityIndex)) {
-      // NOTE: We`re out of room, get a new block!
-      world_entity_block *OldBlock = World->FirstFree;
-      if (OldBlock) {
-        World->FirstFree = OldBlock->Next;
-      } else {
-        OldBlock = PushStruct(Arena, world_entity_block);
+    if(NewP) {
+      // NOTE: Insert the entity into its new entity block
+      world_chunk *Chunk = GetWorldChunk(World, NewP->ChunkX, NewP->ChunkY, NewP->ChunkZ, Arena);
+      Assert(Chunk);
+      world_entity_block *Block = &Chunk->FirstBlock;
+      if (Block->EntityCount == ArrayCount(Block->LowEntityIndex)) {
+        // NOTE: We`re out of room, get a new block!
+        world_entity_block *OldBlock = World->FirstFree;
+        if (OldBlock) {
+          World->FirstFree = OldBlock->Next;
+        } else {
+          OldBlock = PushStruct(Arena, world_entity_block);
+        }
+
+        *OldBlock = *Block;
+        Block->Next = OldBlock;
+        Block->EntityCount = 0;
       }
 
-      *OldBlock = *Block;
-      Block->Next = OldBlock;
-      Block->EntityCount = 0;
+      Assert(Block->EntityCount < ArrayCount(Block->LowEntityIndex));
+      Block->LowEntityIndex[Block->EntityCount++] = LowEntityIndex;
     }
+  }
+}
 
-    Assert(Block->EntityCount < ArrayCount(Block->LowEntityIndex));
-    Block->LowEntityIndex[Block->EntityCount++] = LowEntityIndex;
+internal void ChangeEntityLocation(memory_arena *Arena, world *World, uint32 LowEntityIndex, low_entity *LowEntity, world_position *OldP, world_position *NewP) {
+  ChangeEntityLocationRaw(Arena, World, LowEntityIndex, OldP, NewP);
+
+  if (NewP) {
+    LowEntity->P = *NewP;
+  } else {
+    LowEntity->P = NullPosition();
   }
 }
