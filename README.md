@@ -57,7 +57,7 @@ If when trying to build the application, you receive the error "The input line i
 * Raymond Chen - Expert on Windows Platform
 * Agner Fog -> www.agner.org has an list of instruction latencies, throughputs and micro-operation breakdowns for Intel, AMD and VIA CPUs
 * WolframAlpha
-
+* Templates are bad for debugging so dont use them
 ##Vectors
 
 * Hadamard Product -> only for colors
