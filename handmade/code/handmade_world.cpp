@@ -171,11 +171,12 @@ inline world_position CenteredChunkPoint(uint32 ChunkX, uint32 ChunkY, uint32 Ch
 
 inline void ChangeEntityLocationRaw(memory_arena *Arena, world *World, uint32 LowEntityIndex, world_position *OldP, world_position *NewP) {
   // TODO: If this moves an entity into the camera bounds, should it automatically go into the high set immediatly?
+  // If it moves _out_ of the camera bounds, should it be removed from the high set immediately?
 
   Assert(!OldP || IsValid(*OldP));
   Assert(!NewP || IsValid(*NewP));
 
-  if (OldP && AreInSameChunk(World, OldP, NewP)) {
+  if (OldP && NewP && AreInSameChunk(World, OldP, NewP)) {
     // NOTE: Leave entity where it is
   } else {
     if (OldP) {
