@@ -59,6 +59,7 @@ If when trying to build the application, you receive the error "The input line i
 * WolframAlpha
 * Templates are bad for debugging so dont use them
 ##Vectors
+* Chris Hecker -> Indie Game famous developer, has articles etc
 
 * Hadamard Product -> only for colors
 * For moiton, we use Dot Product, Perp Dot Product and Cross Product
