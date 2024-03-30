@@ -8,7 +8,9 @@ internal sim_entity_hash *GetHashFromStorageIndex(sim_region *SimRegion, uint32 
     // STUDY: WTF This does? Aparently when we do not get the value only by the hashValue we need to search one by one (offset)
     // starting from the hashValue index, but when we get to the end of the array, if not found yet we need to wrap back to the beginning of the array
     // and the second part does that (ArrayCount(SimRegion->Hash) - 1)
-    sim_entity_hash *Entry = SimRegion->Hash + ((HashValue + Offset) & (ArrayCount(SimRegion->Hash) - 1));
+    uint32 HashMask = (ArrayCount(SimRegion->Hash) - 1);
+    uint32 HashIndex = ((HashValue + Offset) & HashMask);
+    sim_entity_hash *Entry = SimRegion->Hash + HashIndex;
 
     if (Entry->Index == 0 || Entry->Index == StorageIndex) {
       Result = Entry;
@@ -90,17 +92,19 @@ internal sim_entity *AddEntity(game_state *GameState, sim_region *SimRegion, uin
     } else {
       Dest->P = GetSimSpaceP(SimRegion, Source);
     }
-
   }
+
+  return Dest;
 }
 
 internal sim_region *BeginSim(memory_arena *SimArena, game_state *GameState, world *World, world_position Origin, rectangle2 Bounds) {
   // TODO: If entities were stored in the world, we wouldnt need the game state here!
 
-  // TODO: IMPORTANT: CLEAR THE HASH TABLE!!!
   // TODO: IMPORTANT: NOTION OF ACTIVE VS. INACTIVE ENTITIES FOR THE APRON!
 
   sim_region *SimRegion = PushStruct(SimArena, sim_region);
+  ZeroStruct(SimRegion->Hash);
+
   SimRegion->World = World;
   SimRegion->Origin = Origin;
   SimRegion->Bounds = Bounds;
@@ -121,7 +125,7 @@ internal sim_region *BeginSim(memory_arena *SimArena, game_state *GameState, wor
             uint32 LowEntityIndex = Block->LowEntityIndex[EntityIndex];
             low_entity *Low = GameState->LowEntities + LowEntityIndex;
 
-            v2 SimSpaceP = GetSimSpaceP(SimRegion, Low);
+            v2 SimSpaceP = GetSimSpaceP(SimRegion, Low); // gets where the low is relative to the sim region
             if (IsInRectangle(SimRegion->Bounds, SimSpaceP)) {
               // TODO: Check a second rectangle to set the entity to be "movable" or not!
               AddEntity(GameState, SimRegion, LowEntityIndex, Low, &SimSpaceP);
@@ -131,6 +135,8 @@ internal sim_region *BeginSim(memory_arena *SimArena, game_state *GameState, wor
       }
     }
   }
+
+  return SimRegion;
 }
 
 internal void EndSim(sim_region *Region, game_state *GameState) {
