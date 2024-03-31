@@ -30,23 +30,34 @@ union entity_reference {
   uint32 Index;
 };
 
+enum sim_entity_flags {
+  // TODO: Does it make more sense to have the flag be for _non_ colliding entities?
+  EntityFlag_Collides = (1 << 1),
+  EntityFlag_Nonspatial = (1 << 2),
+
+
+  EntityFlag_Simming = (1 << 30),
+};
+
 struct sim_entity {
   uint32 StorageIndex;
 
   entity_type Type;
+  uint32 Flags;
 
   v2 P;
-  uint32 ChunkZ;
+  v2 dP;
+
   real32 Z;
   real32 dZ;
 
-  v2 dP;
+  uint32 ChunkZ;
+
   real32 Width, Height;
 
   uint32 FacingDirection;
   real32 tBob;
 
-  bool32 Collides;
   int32 dAbsTileZ;
 
   // TODO: Should hitpoints themselves be entities?

@@ -60,8 +60,11 @@ struct hero_bitmaps {
 };
 
 struct low_entity {
-  sim_entity Sim;
+  // TODO: It`s kind of busted that P`s can be invalid here,
+  // AND we store whether they would be invalid in the flags field...
+  // Can we do something better here?
   world_position P;
+  sim_entity Sim;
 };
 
 struct entity_visible_piece {

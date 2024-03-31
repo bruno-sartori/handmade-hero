@@ -222,15 +222,16 @@ struct add_low_entity_result {
   low_entity *Low;
 };
 
-internal add_low_entity_result AddLowEntity(game_state *GameState, entity_type Type, world_position *P) {
+internal add_low_entity_result AddLowEntity(game_state *GameState, entity_type Type, world_position P) {
   Assert(GameState->LowEntityCount < ArrayCount(GameState->LowEntities));
   uint32 EntityIndex = GameState->LowEntityCount++;
 
   low_entity *EntityLow = GameState->LowEntities + EntityIndex;
   *EntityLow = {};
   EntityLow->Sim.Type = Type;
+  EntityLow->P = NullPosition();
 
-  ChangeEntityLocation(&GameState->WorldArena, GameState->World, EntityIndex, EntityLow, 0, P);
+  ChangeEntityLocation(&GameState->WorldArena, GameState->World, EntityIndex, EntityLow, P);
 
   add_low_entity_result Result;
   Result.Low = EntityLow;
@@ -245,11 +246,11 @@ internal add_low_entity_result AddLowEntity(game_state *GameState, entity_type T
 
 internal add_low_entity_result AddWall(game_state *GameState, uint32 AbsTileX, uint32 AbsTileY, uint32 AbsTileZ) {
   world_position P = ChunkPositionFromTilePosition(GameState->World, AbsTileX, AbsTileY, AbsTileZ);
-  add_low_entity_result Entity = AddLowEntity(GameState, EntityType_Wall, &P);
+  add_low_entity_result Entity = AddLowEntity(GameState, EntityType_Wall, P);
 
   Entity.Low->Sim.Height = GameState->World->TileSideInMeters;
   Entity.Low->Sim.Width = Entity.Low->Sim.Height;
-  Entity.Low->Sim.Collides = true;
+  AddFlag(&Entity.Low->Sim, EntityFlag_Collides);
 
   return Entity;
 }
@@ -266,22 +267,21 @@ internal void InitHitPoints(low_entity *EntityLow, uint32 HitPointCount) {
 }
 
 internal add_low_entity_result AddSword(game_state *GameState) {
-  add_low_entity_result Entity = AddLowEntity(GameState, EntityType_Sword, 0);
+  add_low_entity_result Entity = AddLowEntity(GameState, EntityType_Sword, NullPosition());
 
   Entity.Low->Sim.Height = 0.5f; // 1.4f;
   Entity.Low->Sim.Width = 1.0f;
-  Entity.Low->Sim.Collides = false;
 
   return Entity;
 }
 
 internal add_low_entity_result AddPlayer(game_state *GameState) {
   world_position P = GameState->CameraP;
-  add_low_entity_result Entity = AddLowEntity(GameState, EntityType_Hero, &P);
+  add_low_entity_result Entity = AddLowEntity(GameState, EntityType_Hero, P);
 
   Entity.Low->Sim.Height = 0.5f; // 1.4f;
   Entity.Low->Sim.Width = 1.0f;
-  Entity.Low->Sim.Collides = true;
+  AddFlag(&Entity.Low->Sim, EntityFlag_Collides);
 
   InitHitPoints(Entity.Low, 3);
 
@@ -297,11 +297,11 @@ internal add_low_entity_result AddPlayer(game_state *GameState) {
 
 internal add_low_entity_result AddMonster(game_state *GameState, uint32 AbsTileX, uint32 AbsTileY, uint32 AbsTileZ) {
   world_position P = ChunkPositionFromTilePosition(GameState->World, AbsTileX, AbsTileY, AbsTileZ);
-  add_low_entity_result Entity = AddLowEntity(GameState, EntityType_Monster, &P);
+  add_low_entity_result Entity = AddLowEntity(GameState, EntityType_Monster, P);
 
   Entity.Low->Sim.Height = 0.5f; // 1.4f;
   Entity.Low->Sim.Width = 1.0f;
-  Entity.Low->Sim.Collides = true;
+  AddFlag(&Entity.Low->Sim, EntityFlag_Collides);
 
   InitHitPoints(Entity.Low, 3);
 
@@ -310,11 +310,11 @@ internal add_low_entity_result AddMonster(game_state *GameState, uint32 AbsTileX
 
 internal add_low_entity_result AddFamiliar(game_state *GameState, uint32 AbsTileX, uint32 AbsTileY, uint32 AbsTileZ) {
   world_position P = ChunkPositionFromTilePosition(GameState->World, AbsTileX, AbsTileY, AbsTileZ);
-  add_low_entity_result Entity = AddLowEntity(GameState, EntityType_Familiar, &P);
+  add_low_entity_result Entity = AddLowEntity(GameState, EntityType_Familiar, P);
 
   Entity.Low->Sim.Height = 0.5f; // 1.4f;
   Entity.Low->Sim.Width = 1.0f;
-  Entity.Low->Sim.Collides = true;
+  AddFlag(&Entity.Low->Sim, EntityFlag_Collides);
 
   return Entity;
 }
@@ -370,7 +370,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
 
   if (!Memory->IsInitialized) {
     // NOTE: Reserve entity slot 0 for the null entity
-    AddLowEntity(GameState, EntityType_Null, 0);
+    AddLowEntity(GameState, EntityType_Null, NullPosition());
     GameState->Backdrop = DEBUGLoadBMP(Thread, Memory->DEBUGPlatformReadEntireFile, "test/test_background.bmp");
     GameState->Shadow = DEBUGLoadBMP(Thread, Memory->DEBUGPlatformReadEntireFile, "test/test_hero_shadow.bmp");
     GameState->Tree = DEBUGLoadBMP(Thread, Memory->DEBUGPlatformReadEntireFile, "test2/tree00.bmp");
@@ -530,6 +530,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
     uint32 CameraTileY = ScreenBaseY * TilesPerHeight + 9 / 2;
     uint32 CameraTileZ = ScreenBaseZ;
     NewCameraP = ChunkPositionFromTilePosition(GameState->World, CameraTileX, CameraTileY, CameraTileZ);
+    GameState->CameraP = NewCameraP;
 
     AddMonster(GameState, CameraTileX + 2, CameraTileY + 2, CameraTileZ);
     for (int FamiliarIndex = 0; FamiliarIndex < 1; ++FamiliarIndex) {
@@ -560,7 +561,9 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
         ConHero->EntityIndex = AddPlayer(GameState).LowIndex;
       }
     } else {
+      ConHero->dZ = 0;
       ConHero->ddP = {}; // acceleration
+      ConHero->dSword = {};
 
       if (Controller->IsAnalog) {
         // NOTE: Use analog movement tuning
@@ -646,7 +649,10 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
           controlled_hero *ConHero = GameState->ControlledHeroes + ControlIndex;
 
           if (Entity->StorageIndex == ConHero->EntityIndex) {
-            Entity->dZ = ConHero->dZ;
+            if (ConHero->dZ != 0.0f) {
+              Entity->dZ = ConHero->dZ;
+            }
+
             move_spec MoveSpec = DefaultMoveSpec();
             MoveSpec.UnitMaxAccelVector = true;
             MoveSpec.Speed = 50.0f;
@@ -655,10 +661,9 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
 
             if ((ConHero->dSword.X != 0.0f) || (ConHero->dSword.Y != 0.0f)) {
               sim_entity *Sword = Entity->Sword.Ptr;
-              if (Sword) {
-                Sword->P = Entity->P;
+              if (Sword && IsSet(Sword, EntityFlag_Nonspatial)) {
                 Sword->DistanceRemaining = 5.0f;
-                Sword->dP = 5.0f * ConHero->dSword;
+                MakeEntitySpatial(Sword, Entity->P, 5.0f * ConHero->dSword);
               }
             }
           }
@@ -742,8 +747,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
     }
   }
 
-  // TODO: IMPORTANT: Add logic to the sim region to handle "unplaced" entities
-  // TODO: IMPORTANT: Figure out why the origin is where it is...
   world_position WorldOrigin = {};
   world_difference Diff = Subtract(SimRegion->World, &WorldOrigin, &SimRegion->Origin);
   DrawRectangle(Buffer, Diff.dXY, V2(10.0f, 10.0f), 1.0f, 1.0f, 0.0f);
