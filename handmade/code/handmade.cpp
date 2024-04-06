@@ -362,6 +362,68 @@ inline void DrawHitpoints(sim_entity *Entity, entity_visible_piece_group *PieceG
   }
 }
 
+internal void ClearCollisionRulesFor(game_state *GameState, uint32 StorageIndex) {
+  // NOTE: Searches for the collision rule in the linked list, if the
+  // rule that the actual rule is pointing to is a match, it points
+  // to where the match rule was pointing to, to skip the match rule
+  // from the list as we already found that it was a match
+
+  // TODO: Need to make a better data structure that allows
+  // removal of collision rules without searching the entire table
+  for(uint32 HashBucket = 0; HashBucket < ArrayCount(GameState->CollisionRuleHash); ++HashBucket) {
+    for(pairwise_collision_rule **Rule = &GameState->CollisionRuleHash[HashBucket]; *Rule; ) {
+      if (((*Rule)->StorageIndexA == StorageIndex) || ((*Rule)->StorageIndexB == StorageIndex)) {
+        pairwise_collision_rule *RemovedRule = *Rule;
+        *Rule = (*Rule)->NextInHash;
+
+        RemovedRule->NextInHash = GameState->FirstFreeCollisionRule;
+        GameState->FirstFreeCollisionRule = RemovedRule;
+      } else {
+        Rule = &(*Rule)->NextInHash;
+      }
+    }
+  }
+}
+
+internal void AddCollisionRule(game_state *GameState, uint32 StorageIndexA, uint32 StorageIndexB, bool32 ShouldCollide) {
+  // TODO: Collapse this with ShouldCollide
+   if (StorageIndexA > StorageIndexB) {
+    uint32 Temp = StorageIndexA;
+    StorageIndexA = StorageIndexB;
+    StorageIndexB = Temp;
+  }
+
+
+  // TODO: BETTER HASH FUNCTION
+  pairwise_collision_rule *Found = 0;
+  uint32 HashBucket = StorageIndexA & (ArrayCount(GameState->CollisionRuleHash) - 1);
+  for(pairwise_collision_rule *Rule = GameState->CollisionRuleHash[HashBucket]; Rule; Rule = Rule->NextInHash) {
+    if ((Rule->StorageIndexA == StorageIndexA) && (Rule->StorageIndexB == StorageIndexB)) {
+      Found = Rule;
+      break;
+    }
+  }
+
+  if (!Found) {
+    Found = GameState->FirstFreeCollisionRule;
+
+    if (Found) {
+      GameState->FirstFreeCollisionRule = Found->NextInHash;
+    } else {
+      Found = PushStruct(&GameState->WorldArena, pairwise_collision_rule);
+    }
+
+    Found->NextInHash = GameState->CollisionRuleHash[HashBucket];
+    GameState->CollisionRuleHash[HashBucket] = Found;
+  }
+
+  if(Found) {
+    Found->StorageIndexA = StorageIndexA;
+    Found->StorageIndexB = StorageIndexB;
+    Found->ShouldCollide = ShouldCollide;
+  }
+}
+
 extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
   Assert((&Input->Controllers[0].Terminator - &Input->Controllers[0].Buttons[0]) == (ArrayCount(Input->Controllers[0].Buttons)));
   Assert(sizeof(game_state) <= Memory->PermanentStorageSize);
@@ -668,6 +730,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
                 if (Sword && IsSet(Sword, EntityFlag_Nonspatial)) {
                   Sword->DistanceLimit = 5.0f;
                   MakeEntitySpatial(Sword, Entity->P, Entity->dP + 5.0f * ConHero->dSword);
+                  AddCollisionRule(GameState, Sword->StorageIndex, Entity->StorageIndex, false);
                 }
               }
             }
@@ -691,14 +754,9 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
           MoveSpec.Speed = 0.0f;
           MoveSpec.Drag = 0.0f;
 
-          // TODO: IMPORTANT: Add the ability in the collision
-          // routines to understand a movement limit for an entity, and
-          // then update this routine to use that to know when to kill the sword.
-          // TODO: Need to handle the fact that DistanceTraveled
-          // might not have enough distance for the total entity move
-          // for the frame!
           v2 OldP = Entity->P;
           if (Entity->DistanceLimit == 0.0f) {
+            ClearCollisionRulesFor(GameState, Entity->StorageIndex);
             MakeEntityNonSpatial(Entity);
           }
           PushBitmap(&PieceGroup, &GameState->Shadow, V2(0, 0), 0, HeroBitmaps->Align, ShadowAlpha, 0.0f);
@@ -757,7 +815,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
       }
 
       if (!IsSet(Entity, EntityFlag_Nonspatial)) {
-        MoveEntity(SimRegion, Entity, Input->dtForFrame, &MoveSpec, ddP);
+        MoveEntity(GameState, SimRegion, Entity, Input->dtForFrame, &MoveSpec, ddP);
       }
 
 
