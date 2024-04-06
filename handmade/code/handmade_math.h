@@ -188,8 +188,8 @@ inline rectangle2 RectCenterHalfDim(v2 Center, v2 HalfDim) {
 inline rectangle2 AddRadiusTo(rectangle2 A, real32 RadiusW, real32 RadiusH) {
   rectangle2 Result;
 
-  Result.Min = A.Min - V2(RadiusW, RadiusW);
-  Result.Max = A.Max + V2(RadiusH, RadiusH);
+  Result.Min = A.Min - V2(RadiusW, RadiusH);
+  Result.Max = A.Max + V2(RadiusW, RadiusH);
 
   return Result;
 }
