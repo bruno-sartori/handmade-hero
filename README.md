@@ -58,10 +58,11 @@ If when trying to build the application, you receive the error "The input line i
 * Agner Fog -> www.agner.org has an list of instruction latencies, throughputs and micro-operation breakdowns for Intel, AMD and VIA CPUs
 * WolframAlpha
 * Templates are bad for debugging so dont use them
+* AABB - Axis Aligned Bounding Box
 ##Vectors
 * Chris Hecker -> Indie Game famous developer, has articles etc
 
-* Hadamard Product -> only for colors
+* Hadamard Product -> only for colors (we are also using it for chunk dim in meters)
 * For moiton, we use Dot Product, Perp Dot Product and Cross Product
 * Produto Interno
 
