@@ -380,7 +380,14 @@ inline rectangle3 RectCenterDim(v3 Center, v3 Dim) {
 }
 
 inline bool32 IsInRectangle(rectangle3 Rectangle, v3 Test) {
-  bool32 Result = ((Test.X >= Rectangle.Min.X) && (Test.Y >= Rectangle.Min.Y) && (Test.X < Rectangle.Max.X) && (Test.Y < Rectangle.Max.Y));
+  bool32 Result = (
+    (Test.X >= Rectangle.Min.X) &&
+    (Test.Y >= Rectangle.Min.Y) &&
+    (Test.Z >= Rectangle.Min.Z) &&
+    (Test.X < Rectangle.Max.X) &&
+    (Test.Y < Rectangle.Max.Y) &&
+    (Test.Z < Rectangle.Max.Z)
+  );
 
   return Result;
 }

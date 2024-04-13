@@ -52,7 +52,7 @@ struct sim_entity {
 
   real32 DistanceLimit;
 
-  real32 Width, Height;
+  v3 Dim;
 
   uint32 FacingDirection;
   real32 tBob;
@@ -78,6 +78,9 @@ struct sim_region {
   // TODO: Need a hash table here to map stoed entity indices to sim entities!
 
   world *World;
+  real32 MaxEntityRadius;
+  real32 MaxEntityVelocity;
+
   world_position Origin;
   rectangle3 Bounds;
   rectangle3 UpdatableBounds;

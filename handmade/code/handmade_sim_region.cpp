@@ -92,12 +92,18 @@ internal sim_entity *AddEntityRaw(game_state *GameState, sim_region *SimRegion, 
   return Entity;
 }
 
+inline bool32 EntityOverlapsRectangle(v3 P, v3 Dim, rectangle3 Rect) {
+  rectangle3 Grown = AddRadiusTo(Rect, 0.5f * Dim);
+  bool32 Result = IsInRectangle(Grown, P);
+  return Result;
+}
+
 internal sim_entity *AddEntity(game_state *GameState, sim_region *SimRegion, uint32 StorageIndex, low_entity *Source, v3 *SimP) {
   sim_entity *Dest = AddEntityRaw(GameState, SimRegion, StorageIndex, Source);
   if (Dest) {
     if (SimP) {
       Dest->P = *SimP;
-      Dest->Updatable = IsInRectangle(SimRegion->UpdatableBounds, Dest->P);
+      Dest->Updatable = EntityOverlapsRectangle(Dest->P, Dest->Dim, SimRegion->UpdatableBounds);
     } else {
       Dest->P = GetSimSpaceP(SimRegion, Source);
     }
@@ -106,19 +112,21 @@ internal sim_entity *AddEntity(game_state *GameState, sim_region *SimRegion, uin
   return Dest;
 }
 
-internal sim_region *BeginSim(memory_arena *SimArena, game_state *GameState, world *World, world_position Origin, rectangle3 Bounds) {
+internal sim_region *BeginSim(memory_arena *SimArena, game_state *GameState, world *World, world_position Origin, rectangle3 Bounds, real32 dt) {
   // TODO: If entities were stored in the world, we wouldnt need the game state here!
 
   sim_region *SimRegion = PushStruct(SimArena, sim_region);
   ZeroStruct(SimRegion->Hash);
 
-  // TODO: IMPORTANT: Calculate this eventually from the maximum value of all entities radius plus their speed!
-  real32 UpdateSafetyMargin = 1.0f;
+  // TODO: Try to make these get enforced more rigorously
+  SimRegion->MaxEntityRadius = 5.0f;
+  SimRegion->MaxEntityVelocity = 30.0f;
+  real32 UpdateSafetyMargin = SimRegion->MaxEntityRadius + dt * SimRegion->MaxEntityVelocity;
   real32 UpdateSafetyMarginZ = 1.0f;
 
   SimRegion->World = World;
   SimRegion->Origin = Origin;
-  SimRegion->UpdatableBounds = Bounds;
+  SimRegion->UpdatableBounds = AddRadiusTo(Bounds, V3(SimRegion->MaxEntityRadius, SimRegion->MaxEntityRadius, SimRegion->MaxEntityRadius));
   SimRegion->Bounds = AddRadiusTo(SimRegion->UpdatableBounds, V3(UpdateSafetyMargin, UpdateSafetyMargin, UpdateSafetyMarginZ));
 
   // TODO: Need to be more specific about entity counts
@@ -140,7 +148,7 @@ internal sim_region *BeginSim(memory_arena *SimArena, game_state *GameState, wor
 
             if (!IsSet(&Low->Sim, EntityFlag_Nonspatial)) {
               v3 SimSpaceP = GetSimSpaceP(SimRegion, Low); // gets where the low is relative to the sim region
-              if (IsInRectangle(SimRegion->Bounds, SimSpaceP)) {
+              if (EntityOverlapsRectangle(SimSpaceP, Low->Sim.Dim, SimRegion->Bounds)) {
                 AddEntity(GameState, SimRegion, LowEntityIndex, Low, &SimSpaceP);
               }
             }
@@ -192,7 +200,9 @@ internal void EndSim(sim_region *Region, game_state *GameState) {
       }
 #else
     // IMPORTANT: This centers camera on player and add smooth scroll
+    real32 CamZOffset = NewCameraP.Offset.Z;
     NewCameraP = Stored->P;
+    NewCameraP.Offset.Z = CamZOffset;
 #endif
 
     GameState->CameraP = NewCameraP;
@@ -292,11 +302,15 @@ internal void MoveEntity(game_state *GameState, sim_region *SimRegion, sim_entit
 
   // TODO: ODE here!
   ddP += -MoveSpec->Drag * Entity->dP;
-  ddP += V3(0, 0, -9.8f);
+  ddP += V3(0, 0, -9.8f); // NOTE: Gravity!
 
   v3 OldPlayerP = Entity->P;
   v3 PlayerDelta = (0.5f * ddP * Square(dt) + Entity->dP * dt); // delta between player position and the position it will be if no collision occurs
   Entity->dP = ddP * dt + Entity->dP; // P'' (velocity) = at + v
+
+  // TODO: Upgrade physical motion routines to handle capping the maximum velocity?
+  Assert(LengthSq(Entity->dP) <= Square(SimRegion->MaxEntityVelocity));
+
   v3 NewPlayerP = OldPlayerP + PlayerDelta;
 
   /**
@@ -335,11 +349,10 @@ internal void MoveEntity(game_state *GameState, sim_region *SimRegion, sim_entit
           sim_entity *TestEntity = SimRegion->Entities + TestHighEntityIndex;
 
           if (ShouldCollide(GameState, Entity, TestEntity)) {
-            // TODO: Entities have height?
             v3 MinkowskiDiameter = {
-              TestEntity->Width + Entity->Width,
-              TestEntity->Height + Entity->Height,
-              2.0f * World->TileDepthInMeters
+              TestEntity->Dim.X + Entity->Dim.X,
+              TestEntity->Dim.Y + Entity->Dim.Y,
+              TestEntity->Dim.Z + Entity->Dim.Z
             };
 
             v3 MinCorner = -0.5f * MinkowskiDiameter;
@@ -391,6 +404,7 @@ internal void MoveEntity(game_state *GameState, sim_region *SimRegion, sim_entit
   // TODO: This has to become real height handling / ground collision / etc.
   if (Entity->P.Z < 0) {
     Entity->P.Z = 0;
+    Entity->dP.Z = 0;
   }
 
   if (Entity->DistanceLimit != 0.0f) {
