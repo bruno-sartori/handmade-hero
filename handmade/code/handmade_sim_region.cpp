@@ -379,7 +379,7 @@ internal void MoveEntity(game_state *GameState, sim_region *SimRegion, sim_entit
         for(uint32 TestHighEntityIndex = 0; TestHighEntityIndex < SimRegion->EntityCount; ++TestHighEntityIndex) {
           sim_entity *TestEntity = SimRegion->Entities + TestHighEntityIndex;
 
-          if (CanCollide(GameState, Entity, TestEntity) && TestEntity->P.Z == Entity->P.Z) {
+          if (CanCollide(GameState, Entity, TestEntity)) {
             v3 MinkowskiDiameter = {
               TestEntity->Dim.X + Entity->Dim.X,
               TestEntity->Dim.Y + Entity->Dim.Y,

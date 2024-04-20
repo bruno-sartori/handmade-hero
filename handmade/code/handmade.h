@@ -4,6 +4,10 @@
 TODO:
 
 ARCHITECTURE EXPLORATION
+  - Z!
+    - 3D collision detection working properly!
+    - Figure out how you go "up" and "down", and how is this rendered?
+    - "Frinstances"!
   - Collision detection?
     - Transient collision rules! Clear based on flag.
       - Allow non-transient rules to override transient ones.
@@ -11,9 +15,6 @@ ARCHITECTURE EXPLORATION
     - What`s the plan for robustness / shape definition?
     - (Implement reprojection ho handle interpenetration)
     - "Things pushing other things"
-  - Z!
-    - Figure out how you go "up" and "down", and how is this rendered?
-    - "Frinstances"!
   - Implement multiple sim regions per frame
     - Per-entity clocking
     - Sim region merging? For multiple players?
