@@ -93,6 +93,27 @@ inline real32 Square(real32 A) {
   return Result;
 }
 
+inline real32 Lerp(real32 A, real32 t, real32 B) {
+  real32 Result = (1.0f - t) * A + t * B;
+  return Result;
+}
+
+inline real32 Clamp(real32 Min, real32 Value, real32 Max) {
+  real32 Result = Value;
+
+  if (Result < Min) {
+    Result = Min;
+  } else if (Result > Max) {
+    Result = Max;
+  }
+
+  return Result;
+}
+
+inline real32 Clamp01(real32 Value) {
+  return Clamp(0.0f, Value, 1.0f);
+}
+
 //
 // NOTE: V2 operations
 //
@@ -168,6 +189,16 @@ inline real32 LengthSq(v2 A) {
 
 inline real32 Length(v2 A) {
   real32 Result = SquareRoot(LengthSq(A));
+  return Result;
+}
+
+
+inline v2 Clamp01(v2 Value) {
+  v2 Result;
+
+  Result.X =  Clamp01(Value.X);
+  Result.Y =  Clamp01(Value.Y);
+
   return Result;
 }
 
@@ -250,6 +281,16 @@ inline real32 LengthSq(v3 A) {
 
 inline real32 Length(v3 A) {
   real32 Result = SquareRoot(LengthSq(A));
+  return Result;
+}
+
+inline v3 Clamp01(v3 Value) {
+  v3 Result;
+
+  Result.X =  Clamp01(Value.X);
+  Result.Y =  Clamp01(Value.Y);
+  Result.Z =  Clamp01(Value.Z);
+
   return Result;
 }
 
@@ -401,6 +442,34 @@ inline bool32 RectanglesIntersect(rectangle3 A, rectangle3 B) {
     (B.Min.Z > A.Max.Z) ||
     (B.Min.Z > A.Max.Z)
   );
+
+  return Result;
+}
+
+inline real32 SafeRatioN(real32 Numerator, real32 Divisor, real32 N) {
+  real32 Result = N;
+
+  if (Divisor != 0.0f) {
+    Result = Numerator / Divisor;
+  }
+
+  return Result;
+}
+
+inline real32 SafeRatio0(real32 Numerator, real32 Divisor) {
+  return SafeRatioN(Numerator, Divisor, 0.0f);
+}
+
+inline real32 SafeRatio1(real32 Numerator, real32 Divisor) {
+  return SafeRatioN(Numerator, Divisor, 1.0f);
+}
+
+inline v3 GetBarycentric(rectangle3 A, v3 P) {
+  v3 Result;
+
+  Result.X = SafeRatio0(P.X - A.Min.X, A.Max.X - A.Min.X);
+  Result.Y = SafeRatio0(P.Y - A.Min.Y, A.Max.Y - A.Min.Y);
+  Result.Z = SafeRatio0(P.Z - A.Min.Z, A.Max.Z - A.Min.Z);
 
   return Result;
 }

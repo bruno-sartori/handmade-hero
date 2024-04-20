@@ -61,9 +61,9 @@ If when trying to build the application, you receive the error "The input line i
 * AABB - Axis Aligned Bounding Box
 ##Vectors
 * Chris Hecker -> Indie Game famous developer, has articles etc
-
 * Hadamard Product -> only for colors (we are also using it for chunk dim in meters)
 * For moiton, we use Dot Product, Perp Dot Product and Cross Product
 * Produto Interno
+* For interpolation and Barycentric coordinates: https://caseymuratori.com/blog_0014
 
 rigid body dynamics
