@@ -193,15 +193,6 @@ inline real32 Length(v2 A) {
 }
 
 
-inline v2 Clamp01(v2 Value) {
-  v2 Result;
-
-  Result.X =  Clamp01(Value.X);
-  Result.Y =  Clamp01(Value.Y);
-
-  return Result;
-}
-
 //
 // NOTE: V3 Operations
 //
@@ -437,9 +428,9 @@ inline bool32 RectanglesIntersect(rectangle3 A, rectangle3 B) {
   bool32 Result = !(
     (B.Max.X < A.Min.X) ||
     (B.Min.X > A.Max.X) ||
+    (B.Max.Y < A.Min.Y) ||
     (B.Min.Y > A.Max.Y) ||
-    (B.Min.Y > A.Max.Y) ||
-    (B.Min.Z > A.Max.Z) ||
+    (B.Max.Z < A.Min.Z) ||
     (B.Min.Z > A.Max.Z)
   );
 

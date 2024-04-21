@@ -251,10 +251,10 @@ internal add_low_entity_result AddStair(game_state *GameState, uint32 AbsTileX, 
   world_position P = ChunkPositionFromTilePosition(GameState->World, AbsTileX, AbsTileY, AbsTileZ, V3(0.0f, 0.0f, 0.5f * GameState->World->TileDepthInMeters));
   add_low_entity_result Entity = AddLowEntity(GameState, EntityType_Stairwell, P);
 
-  Entity.Low->Sim.Dim.Y = GameState->World->TileSideInMeters;
-  Entity.Low->Sim.Dim.X = Entity.Low->Sim.Dim.Y;
-  // TODO: This is extremely not cool, figure out a better ground update solution!
-  Entity.Low->Sim.Dim.Z = 1.2f * GameState->World->TileDepthInMeters;
+  Entity.Low->Sim.Dim.X = GameState->World->TileSideInMeters;
+  Entity.Low->Sim.Dim.Y = 2.0f * GameState->World->TileSideInMeters;
+  Entity.Low->Sim.Dim.Z = GameState->World->TileDepthInMeters;
+  AddFlags(&Entity.Low->Sim, EntityFlag_Collides);
 
   return Entity;
 }
@@ -276,7 +276,6 @@ internal add_low_entity_result AddSword(game_state *GameState) {
   Entity.Low->Sim.Dim.Y = 0.5f;
   Entity.Low->Sim.Dim.X = 1.0f;
   AddFlags(&Entity.Low->Sim, EntityFlag_Moveable);
-
 
   return Entity;
 }
@@ -558,7 +557,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
           if (ShouldBeDoor) {
             AddWall(GameState, AbsTileX, AbsTileY, AbsTileZ);
           } else if (CreatedZDoor) {
-            if ((TileX == 10) && (TileY == 6)) {
+            if ((TileX == 10) && (TileY == 5)) {
               AddStair(GameState, AbsTileX, AbsTileY, DoorDown ? AbsTileZ - 1 : AbsTileZ);
             }
           }
@@ -783,6 +782,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
           sim_entity *ClosestHero = 0;
           real32 ClosestHeroDSq = Square(10.0f); //NOTE: Ten meter square maximum search!
 
+#if 0
           // TODO: Make spatial queries easy for things!
           sim_entity *TestEntity = SimRegion->Entities;
           for(uint32 TestEntityIndex = 0; TestEntityIndex < SimRegion->EntityCount; ++TestEntityIndex, ++TestEntity) {
@@ -794,7 +794,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
               }
             }
           }
-
+#endif
           if (ClosestHero && (ClosestHeroDSq > Square(3.0f))) {
             real32 Acceleration = 0.5f;
             real32 OneOverLenght = Acceleration / SquareRoot(ClosestHeroDSq);
@@ -830,9 +830,10 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
         MoveEntity(GameState, SimRegion, Entity, Input->dtForFrame, &MoveSpec, ddP);
       }
 
+      real32 ZFudge = (1.0f + 0.1f * Entity->P.Z);
 
-      real32 EntityGroundPointX = ScreenCenterX + MetersToPixels * Entity->P.X;
-      real32 EntityGroundPointY = ScreenCenterY - MetersToPixels * Entity->P.Y;
+      real32 EntityGroundPointX = ScreenCenterX + MetersToPixels * ZFudge * Entity->P.X;
+      real32 EntityGroundPointY = ScreenCenterY - MetersToPixels * ZFudge * Entity->P.Y;
       real32 EntityZ = -MetersToPixels * Entity->P.Z;
 #if 0
       v2 PlayerLeftTop = {
