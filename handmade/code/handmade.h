@@ -5,9 +5,11 @@ TODO:
 
 ARCHITECTURE EXPLORATION
   - Z!
+    - Debug drawing of Z levels and inclusion of Z to make sure
+    that there are no bugs! (because there are som now :/)
+    - Make sure flying things can go over low walls
     - Need to make a solid concept of ground levels so the camera can
       be freely placed in Z and have multiple ground levels in one sim_region
-    - 3D collision detection working properly!
     - How is this rendered?
     - "Frinstances"!
     - ZFudge!!
@@ -32,7 +34,7 @@ ARCHITECTURE EXPLORATION
     - Logging
     - Diagramming
     - (A LITTLE GUI, but only a little!) Switches / sliders / etc.
-
+    - Draw tile chunks so we can verify that things are aligned / in the chunks we want them to be in / etc
   - Audio
     - Sound effect triggers
     - Ambient sounds

@@ -65,5 +65,6 @@ If when trying to build the application, you receive the error "The input line i
 * For moiton, we use Dot Product, Perp Dot Product and Cross Product
 * Produto Interno
 * For interpolation and Barycentric coordinates: https://caseymuratori.com/blog_0014
+* Tip for debugging heap corruption bugs (engine way to allocate memory via arena): Tutorial 76 Q&A
 
 rigid body dynamics
