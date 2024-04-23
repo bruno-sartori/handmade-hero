@@ -125,7 +125,7 @@ inline world_position MapIntoChunkSpace(world *World, world_position BasePos, v3
   return (Result);
 }
 
-inline world_position ChunkPositionFromTilePosition(world *World, int32 AbsTileX, int32 AbsTileY, int32 AbsTileZ, v3 AdditionalOffset = V3(0.0f, 0.0f, 0.0f)) {
+inline world_position ChunkPositionFromTilePosition(world *World, int32 AbsTileX, int32 AbsTileY, int32 AbsTileZ, v3 AdditionalOffset = V3(0, 0, 0)) {
   world_position BasePos = {};
   v3 TileDim = V3(World->TileSideInMeters, World->TileSideInMeters, World->TileDepthInMeters);
   v3 Offset = Hadamard(TileDim, V3((real32)AbsTileX, (real32)AbsTileY, (real32)AbsTileZ));

@@ -5,11 +5,11 @@ TODO:
 
 ARCHITECTURE EXPLORATION
   - Z!
-    - Debug drawing of Z levels and inclusion of Z to make sure
-    that there are no bugs! (because there are som now :/)
-    - Make sure flying things can go over low walls
     - Need to make a solid concept of ground levels so the camera can
       be freely placed in Z and have multiple ground levels in one sim_region
+    - Concept of ground in the collision loop so it can handle
+    collisions coming onto _and off of_ stairwells, for example.
+    - Make sure flying things can go over low walls
     - How is this rendered?
     - "Frinstances"!
     - ZFudge!!
