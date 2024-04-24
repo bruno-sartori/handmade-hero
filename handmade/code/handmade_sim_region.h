@@ -8,14 +8,14 @@ struct move_spec {
 
 enum entity_type {
   EntityType_Null,
+  EntityType_Space,
   EntityType_Hero,
   EntityType_Wall,
   EntityType_Familiar,
   EntityType_Monster,
   EntityType_Sword,
-  EntityType_Stairwell
+  EntityType_Stairwell,
 };
-
 
 #define HIT_POINT_SUB_COUNT 4
 struct hit_point {
@@ -33,10 +33,12 @@ union entity_reference {
 
 enum sim_entity_flags {
   // TODO: Does it make more sense to have the flag be for _non_ colliding entities?
+  // TODO: Collides and ZSupported probably can be removed now/soon
   EntityFlag_Collides = (1 << 0),
   EntityFlag_Nonspatial = (1 << 1),
   EntityFlag_Moveable = (1 << 2),
-  EntityFlag_ZSupported = (1 << 4),
+  EntityFlag_ZSupported = (1 << 3),
+  EntityFlag_Traversable = (1 << 4),
 
   EntityFlag_Simming = (1 << 30),
 };

@@ -67,5 +67,7 @@ If when trying to build the application, you receive the error "The input line i
 * For interpolation and Barycentric coordinates: https://caseymuratori.com/blog_0014
 * Tip for debugging heap corruption bugs (engine way to allocate memory via arena): Tutorial 76 Q&A
 * Collision Mesh
+* Constructive Solid Geometry (deprecated) (Brushes) (Quake vs Unreal) -> Better than Polygon Soup (today) because is clearer
+what is solid and what is not (Tutorial 79)
 
 rigid body dynamics
