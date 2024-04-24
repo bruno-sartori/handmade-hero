@@ -606,7 +606,9 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
           }
 
           if (ShouldBeDoor) {
-            AddWall(GameState, AbsTileX, AbsTileY, AbsTileZ);
+            if (ScreenIndex == 0) {
+              AddWall(GameState, AbsTileX, AbsTileY, AbsTileZ);
+            }
           } else if (CreatedZDoor) {
             if ((TileX == 10) && (TileY == 5)) {
               AddStair(GameState, AbsTileX, AbsTileY, DoorDown ? AbsTileZ - 1 : AbsTileZ);
@@ -884,7 +886,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
         default: {
           InvalidCodePath;
         } break;
-      }
+       }
 
       if (!IsSet(Entity, EntityFlag_Nonspatial) && IsSet(Entity, EntityFlag_Moveable)) {
         MoveEntity(GameState, SimRegion, Entity, Input->dtForFrame, &MoveSpec, ddP);
