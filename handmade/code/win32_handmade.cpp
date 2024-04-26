@@ -1058,7 +1058,6 @@ int CALLBACK WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CommandLi
             Buffer.Width = GlobalBackbuffer.Width;
             Buffer.Height = GlobalBackbuffer.Height;
             Buffer.Pitch = GlobalBackbuffer.Pitch;
-            Buffer.BytesPerPixel = GlobalBackbuffer.BytesPerPixel;
 
             if (Win32State.InputRecordingIndex) {
               Win32RecordInput(&Win32State, NewInput);
