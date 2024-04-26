@@ -69,5 +69,6 @@ If when trying to build the application, you receive the error "The input line i
 * Collision Mesh
 * Constructive Solid Geometry (deprecated) (Brushes) (Quake vs Unreal) -> Better than Polygon Soup (today) because is clearer
 what is solid and what is not (Tutorial 79)
-
-rigid body dynamics
+* John Carmack -> famous video game programmer
+* rigid body dynamics
+* Sparse Virtual Textures - Sean Barret https://www.youtube.com/watch?v=MejJL87yNgI&pp=ygUjc3BhcnNlIHZpcnR1YWwgdGV4dHVyZXMgc2VhbiBiYXJyZXQ%3D
