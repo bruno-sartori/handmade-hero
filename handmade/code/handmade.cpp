@@ -493,12 +493,16 @@ sim_entity_collision_volume_group *MakeNullCollision(game_state *GameState) {
   return Group;
 }
 
-internal void DrawTestGround(game_state *GameState, loaded_bitmap *Buffer) {
+internal void DrawGroundChunk(game_state *GameState, loaded_bitmap *Buffer, world_position *ChunkP) {
   // TODO: Make random number generation more systemic
-  random_series Series = RandomSeed(1234);
+  // TODO: Look into wang hashing or some other spatial seed generation "thing"!
+  random_series Series = RandomSeed(139 * ChunkP->ChunkX + 593 * ChunkP->ChunkY + 329 * ChunkP->ChunkZ);
 
-  v2 Center = 0.5f * V2i(Buffer->Width, Buffer->Height);
-  for (uint32 GrassIndex = 0; GrassIndex < 100; ++GrassIndex) {
+  real32 Width = (real32)Buffer->Width;
+  real32 Height = (real32)Buffer->Height;
+  v2 Center = 0.5f * V2(Width, Height);
+
+  for (uint32 GrassIndex = 0; GrassIndex < 1000; ++GrassIndex) {
     loaded_bitmap *Stamp;
 
     if (RandomChoice(&Series, 2)) {
@@ -507,23 +511,20 @@ internal void DrawTestGround(game_state *GameState, loaded_bitmap *Buffer) {
       Stamp = GameState->Stone + RandomChoice(&Series, ArrayCount(GameState->Stone));
     }
 
-    real32 Radius = 5.0f;
     v2 BitmapCenter = 0.5f * V2i(Stamp->Width, Stamp->Height);
-    v2 Offset = { RandomBilateral(&Series), RandomBilateral(&Series) };
+    v2 Offset = { Width * RandomUnilateral(&Series), Height * RandomUnilateral(&Series) };
 
-    v2 P = Center + GameState->MetersToPixels * Radius * Offset - BitmapCenter;
+    v2 P = Offset - BitmapCenter;
 
     DrawBitmap(Buffer, Stamp, P.X, P.Y);
   }
 
-  for (uint32 GrassIndex = 0; GrassIndex < 100; ++GrassIndex) {
+  for (uint32 GrassIndex = 0; GrassIndex < 1000; ++GrassIndex) {
     loaded_bitmap *Stamp = GameState->Tuft + RandomChoice(&Series, ArrayCount(GameState->Tuft));
 
-    real32 Radius = 5.0f;
     v2 BitmapCenter = 0.5f * V2i(Stamp->Width, Stamp->Height);
-    v2 Offset = { RandomBilateral(&Series), RandomBilateral(&Series) };
-
-    v2 P = Center + GameState->MetersToPixels * Radius * Offset - BitmapCenter;
+    v2 Offset = { Width * RandomUnilateral(&Series), Height * RandomUnilateral(&Series) };
+    v2 P = Offset - BitmapCenter;
 
     DrawBitmap(Buffer, Stamp, P.X, P.Y);
   }
@@ -638,7 +639,9 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
 
     for (uint32 ScreenIndex = 0; ScreenIndex < 2000; ++ScreenIndex) {
 
-      uint32 DoorDirection = RandomChoice(&Series, (DoorUp || DoorDown) ? 2 : 3);
+      //uint32 DoorDirection = RandomChoice(&Series, (DoorUp || DoorDown) ? 2 : 3);
+      uint32 DoorDirection = RandomChoice(&Series, 2);
+
       bool32 CreatedZDoor = false;
 
       if (DoorDirection == 2) {
@@ -676,9 +679,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
           }
 
           if (ShouldBeDoor) {
-            if (ScreenIndex == 0) {
-              AddWall(GameState, AbsTileX, AbsTileY, AbsTileZ);
-            }
+            AddWall(GameState, AbsTileX, AbsTileY, AbsTileZ);
           } else if (CreatedZDoor) {
             if ((TileX == 10) && (TileY == 5)) {
               AddStair(GameState, AbsTileX, AbsTileY, DoorDown ? AbsTileZ - 1 : AbsTileZ);
@@ -729,7 +730,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
     GameState->CameraP = NewCameraP;
 
     AddMonster(GameState, CameraTileX - 3, CameraTileY + 2, CameraTileZ);
-    for (int FamiliarIndex = 0; FamiliarIndex < 10; ++FamiliarIndex) {
+    for (int FamiliarIndex = 0; FamiliarIndex < 1; ++FamiliarIndex) {
       int32 FamiliarOffsetX = RandomBetween(&Series, -7, 7);
       int32 FamiliarOffsetY = RandomBetween(&Series, -3, -1);
 
@@ -738,8 +739,15 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
       }
     }
 
-    GameState->GroundBuffer = MakeEmptyBitmap(&GameState->WorldArena, 512, 512);
-    DrawTestGround(GameState, &GameState->GroundBuffer);
+    real32 ScreenWidth = (real32)Buffer->Width;
+    real32 ScreenHeight = (real32)Buffer->Height;
+    real32 MaximumZScale = 0.5f;
+    real32 GroundOverscan = 1.5f;
+    uint32 GroundBufferWidth = RoundReal32ToUInt32(GroundOverscan * ScreenWidth);
+    uint32 GroundBufferHeight = RoundReal32ToUInt32(GroundOverscan * ScreenHeight);
+    GameState->GroundBuffer = MakeEmptyBitmap(&GameState->WorldArena, GroundBufferWidth, GroundBufferHeight);
+    GameState->GroundBufferP = GameState->CameraP;
+    DrawGroundChunk(GameState, &GameState->GroundBuffer, &GameState->GroundBufferP);
 
     Memory->IsInitialized = true;
   }
@@ -825,11 +833,19 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
   DrawBuffer->Memory = Buffer->Memory;
 
   DrawRectangle(DrawBuffer, V2(0.0f, 0.0f), V2((real32)DrawBuffer->Width, (real32)DrawBuffer->Height), 0.5f, 0.5f, 0.5f);
-  // TODO: Draw this at center
-  DrawBitmap(DrawBuffer, &GameState->GroundBuffer, 0, 0);
 
   real32 ScreenCenterX = 0.5f * (real32)DrawBuffer->Width;
   real32 ScreenCenterY = 0.5f * (real32)DrawBuffer->Height;
+
+  v2 Ground = {
+    ScreenCenterX - 0.5f * (real32)GameState->GroundBuffer.Width,
+    ScreenCenterY - 0.5f * (real32)GameState->GroundBuffer.Height
+  };
+  v3 Delta = Subtract(GameState->World, &GameState->GroundBufferP, &GameState->CameraP);
+  Delta.Y = -Delta.Y;
+  Ground += GameState->MetersToPixels * Delta.XY;
+
+  DrawBitmap(DrawBuffer, &GameState->GroundBuffer, Ground.X, Ground.Y);
 
   // TODO: Move this out into handmade_entity.cpp!
   entity_visible_piece_group PieceGroup;

@@ -29,6 +29,7 @@ Then just hit f11 and start debugging!
 ## Debugging Tools
 * Press P Key to Pause
 * Press L Key to start input loop and L key again to lock the loop
+* Press Alt + Enter Keys to go full screen
 
 ## Troubleshoot
 

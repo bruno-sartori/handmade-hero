@@ -212,6 +212,7 @@ struct game_state {
   sim_entity_collision_volume_group *WallCollision;
   sim_entity_collision_volume_group *StandardRoomCollision;
 
+  world_position GroundBufferP;
   loaded_bitmap GroundBuffer;
 };
 
