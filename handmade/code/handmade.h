@@ -32,6 +32,7 @@ ARCHITECTURE EXPLORATION
     - Simple zoomed-out view for testing?
 
   - Debug Code
+    - Fonts
     - Logging
     - Diagramming
     - (A LITTLE GUI, but only a little!) Switches / sliders / etc.

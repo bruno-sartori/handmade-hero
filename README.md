@@ -72,3 +72,4 @@ what is solid and what is not (Tutorial 79)
 * John Carmack -> famous video game programmer
 * rigid body dynamics
 * Sparse Virtual Textures - Sean Barret https://www.youtube.com/watch?v=MejJL87yNgI&pp=ygUjc3BhcnNlIHZpcnR1YWwgdGV4dHVyZXMgc2VhbiBiYXJyZXQ%3D
+* Sean Barret - Premultiplied Alpha
