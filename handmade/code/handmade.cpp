@@ -138,6 +138,73 @@ internal void DrawBitmap(loaded_bitmap *Buffer, loaded_bitmap *Bitmap, real32 Re
   }
 }
 
+internal void DrawMatte(loaded_bitmap *Buffer, loaded_bitmap *Bitmap, real32 RealX, real32 RealY, real32 CAlpha = 1.0f) {
+  int32 MinX = RoundReal32ToInt32(RealX);
+  int32 MinY = RoundReal32ToInt32(RealY);
+  int32 MaxX = MinX + Bitmap->Width;
+  int32 MaxY = MinY + Bitmap->Height;
+
+  int32 SourceOffsetX = 0;
+  if (MinX < 0) {
+    SourceOffsetX = -MinX;
+    MinX = 0;
+  }
+
+  int32 SourceOffsetY = 0;
+  if (MinY < 0) {
+    SourceOffsetY = -MinY;
+    MinY = 0;
+  }
+
+  if (MaxX > Buffer->Width) {
+    MaxX = Buffer->Width;
+  }
+
+  if (MaxY > Buffer->Height) {
+    MaxY = Buffer->Height;
+  }
+
+  uint8 *SourceRow = (uint8 *)Bitmap->Memory + SourceOffsetY * Bitmap->Pitch + BITMAP_BITES_PER_PIXEL * SourceOffsetX;
+  uint8 *DestRow = ((uint8 *)Buffer->Memory + MinX * BITMAP_BITES_PER_PIXEL + MinY * Buffer->Pitch);
+
+  for (int Y = MinY; Y < MaxY; ++Y) {
+    uint32 *Dest = (uint32 *)DestRow;
+    uint32 *Source = (uint32 *)SourceRow;
+
+    for (int X = MinX; X < MaxX; ++X) {
+
+      real32 SA = (real32)((*Source >> 24) & 0xFF);
+      real32 RSA = (SA  / 255.0f) * CAlpha;
+      real32 SR = CAlpha * (real32)((*Source >> 16) & 0xFF);
+      real32 SG = CAlpha * (real32)((*Source >> 8) & 0xFF);
+      real32 SB = CAlpha * (real32)((*Source >> 0) & 0xFF);
+
+      real32 DA = (real32)((*Dest >> 24) & 0xFF);
+      real32 DR = (real32)((*Dest >> 16) & 0xFF);
+      real32 DG = (real32)((*Dest >> 8) & 0xFF);
+      real32 DB = (real32)((*Dest >> 0) & 0xFF);
+      real32 RDA = (DA / 255.0f);
+
+      real32 InvRSA = (1.0f - RSA);
+      // TODO: Check this for math errors
+      //real32 A = 255.0f * (RSA + RDA - RSA*RDA);
+      real32 A = InvRSA*DA;
+      real32 R = InvRSA*DR;
+      real32 G = InvRSA*DG;
+      real32 B = InvRSA*DB;
+
+      *Dest = (((uint32)(A + 0.5f) << 24) | ((uint32)(R + 0.5f) << 16) | ((uint32)(G + 0.5f) << 8) | ((uint32)(B + 0.5f) << 0));
+
+      ++Dest;
+      ++Source;
+    }
+
+    DestRow += Buffer->Pitch;
+    SourceRow += Bitmap->Pitch;
+  }
+}
+
+
 // NOTE: Pragma pack(operation, byte) tells the compiler to align struct properties in desired bytes so that it does not
 // changes the bytes size structure when dealing with different size properties and then we can use the struct to properly
 // cast the file contents to it
@@ -524,39 +591,63 @@ internal void FillGroundChunk(transient_state *TranState, game_state *GameState,
 
   GroundBuffer->P = *ChunkP;
 
-  // TODO: Make random number generation more systemic
-  // TODO: Look into wang hashing or some other spatial seed generation "thing"!
-  random_series Series = RandomSeed(139 * ChunkP->ChunkX + 593 * ChunkP->ChunkY + 329 * ChunkP->ChunkZ);
-
   real32 Width = (real32)Buffer.Width;
   real32 Height = (real32)Buffer.Height;
-  v2 Center = 0.5f * V2(Width, Height);
 
-  for (uint32 GrassIndex = 0; GrassIndex < 100; ++GrassIndex) {
-    loaded_bitmap *Stamp;
 
-    if (RandomChoice(&Series, 2)) {
-      Stamp = GameState->Grass + RandomChoice(&Series, ArrayCount(GameState->Grass));
-    } else {
-      Stamp = GameState->Stone + RandomChoice(&Series, ArrayCount(GameState->Stone));
+  for (int32 ChunkOffsetY = -1; ChunkOffsetY <= 1; ++ChunkOffsetY) {
+    for (int32 ChunkOffsetX = -1; ChunkOffsetX <= 1; ++ChunkOffsetX) {
+      int32 ChunkX = ChunkP->ChunkX + ChunkOffsetX;
+      int32 ChunkY = ChunkP->ChunkY + ChunkOffsetY;
+      int32 ChunkZ = ChunkP->ChunkZ;
+
+      // TODO: Make random number generation more systemic
+      // TODO: Look into wang hashing or some other spatial seed generation "thing"!
+      random_series Series = RandomSeed(139 * ChunkX + 593 * ChunkY + 329 * ChunkZ);
+
+      v2 Center = V2(ChunkOffsetX * Width, -ChunkOffsetY * Height);
+
+      for (uint32 GrassIndex = 0; GrassIndex < 100; ++GrassIndex) {
+        loaded_bitmap *Stamp;
+
+        if (RandomChoice(&Series, 2)) {
+          Stamp = GameState->Grass + RandomChoice(&Series, ArrayCount(GameState->Grass));
+        } else {
+          Stamp = GameState->Stone + RandomChoice(&Series, ArrayCount(GameState->Stone));
+        }
+
+        v2 BitmapCenter = 0.5f * V2i(Stamp->Width, Stamp->Height);
+        v2 Offset = { Width * RandomUnilateral(&Series), Height * RandomUnilateral(&Series) };
+
+        v2 P = Center + Offset - BitmapCenter;
+
+        DrawBitmap(&Buffer, Stamp, P.X, P.Y);
+      }
     }
-
-    v2 BitmapCenter = 0.5f * V2i(Stamp->Width, Stamp->Height);
-    v2 Offset = { Width * RandomUnilateral(&Series), Height * RandomUnilateral(&Series) };
-
-    v2 P = Offset - BitmapCenter;
-
-    DrawBitmap(&Buffer, Stamp, P.X, P.Y);
   }
 
-  for (uint32 GrassIndex = 0; GrassIndex < 100; ++GrassIndex) {
-    loaded_bitmap *Stamp = GameState->Tuft + RandomChoice(&Series, ArrayCount(GameState->Tuft));
+  for (int32 ChunkOffsetY = -1; ChunkOffsetY <= 1; ++ChunkOffsetY) {
+    for (int32 ChunkOffsetX = -1; ChunkOffsetX <= 1; ++ChunkOffsetX) {
+      int32 ChunkX = ChunkP->ChunkX + ChunkOffsetX;
+      int32 ChunkY = ChunkP->ChunkY + ChunkOffsetY;
+      int32 ChunkZ = ChunkP->ChunkZ;
 
-    v2 BitmapCenter = 0.5f * V2i(Stamp->Width, Stamp->Height);
-    v2 Offset = { Width * RandomUnilateral(&Series), Height * RandomUnilateral(&Series) };
-    v2 P = Offset - BitmapCenter;
+      // TODO: Make random number generation more systemic
+      // TODO: Look into wang hashing or some other spatial seed generation "thing"!
+      random_series Series = RandomSeed(139 * ChunkX + 593 * ChunkY + 329 * ChunkZ);
 
-    DrawBitmap(&Buffer, Stamp, P.X, P.Y);
+      v2 Center = V2(ChunkOffsetX * Width, -ChunkOffsetY * Height);
+
+      for (uint32 GrassIndex = 0; GrassIndex < 30; ++GrassIndex) {
+        loaded_bitmap *Stamp = GameState->Tuft + RandomChoice(&Series, ArrayCount(GameState->Tuft));
+
+        v2 BitmapCenter = 0.5f * V2i(Stamp->Width, Stamp->Height);
+        v2 Offset = { Width * RandomUnilateral(&Series), Height * RandomUnilateral(&Series) };
+        v2 P = Center + Offset - BitmapCenter;
+
+        DrawBitmap(&Buffer, Stamp, P.X, P.Y);
+      }
+    }
   }
 }
 
@@ -814,8 +905,8 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
   transient_state *TranState = (transient_state *)Memory->TransientStorage;
   if (!TranState->IsInitialized) {
     InitializeArena(&TranState->TranArena, Memory->TransientStorageSize - sizeof(transient_state), (uint8 *)Memory->TransientStorage + sizeof(transient_state));
-
-    TranState->GroundBufferCount = 128;
+    // TODO: Pick a real number here!
+    TranState->GroundBufferCount = 32; //128;
     TranState->GroundBuffers = PushArray(&TranState->TranArena, TranState->GroundBufferCount, ground_buffer);
 
     for(uint32 GroundBufferIndex = 0; GroundBufferIndex < TranState->GroundBufferCount; ++GroundBufferIndex) {
@@ -826,6 +917,13 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
     }
 
     TranState->IsInitialized = true;
+  }
+
+  if (Input->ExecutableReload) {
+    for(uint32 GroundBufferIndex = 0; GroundBufferIndex < TranState->GroundBufferCount; ++GroundBufferIndex) {
+      ground_buffer *GroundBuffer = TranState->GroundBuffers + GroundBufferIndex;
+      GroundBuffer->P = NullPosition();
+    }
   }
 
   world *World = GameState->World;
@@ -900,7 +998,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
   DrawBuffer->Pitch = Buffer->Pitch;
   DrawBuffer->Memory = Buffer->Memory;
 
-  DrawRectangle(DrawBuffer, V2(0.0f, 0.0f), V2((real32)DrawBuffer->Width, (real32)DrawBuffer->Height), 0.5f, 0.5f, 0.5f);
+  DrawRectangle(DrawBuffer, V2(0.0f, 0.0f), V2((real32)DrawBuffer->Width, (real32)DrawBuffer->Height), 1.0f, 0.0f, 1.0f);
 
   v2 ScreenCenter = {
     0.5f * (real32)DrawBuffer->Width,
@@ -910,6 +1008,24 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
   real32 ScreenWidthInMeters = DrawBuffer->Width * PixelsToMeters;
   real32 ScreenHeightInMeters = DrawBuffer->Height * PixelsToMeters;
   rectangle3 CameraBoundsInMeters = RectCenterDim(V3(0, 0, 0), V3(ScreenWidthInMeters, ScreenHeightInMeters, 0.0f));
+
+  for(uint32 GroundBufferIndex = 0; GroundBufferIndex < TranState->GroundBufferCount; ++GroundBufferIndex) {
+    ground_buffer *GroundBuffer = TranState->GroundBuffers + GroundBufferIndex;
+
+    if (IsValid(GroundBuffer->P)) {
+      loaded_bitmap Bitmap = TranState->GroundBitmapTemplate;
+      Bitmap.Memory = GroundBuffer->Memory;
+
+      v3 Delta = GameState->MetersToPixels * Subtract(GameState->World, &GroundBuffer->P, &GameState->CameraP);
+
+      v2 Ground = {
+        ScreenCenter.X + Delta.X - 0.5f * (real32)Bitmap.Width,
+        ScreenCenter.Y - Delta.Y - 0.5f * (real32)Bitmap.Height
+      };
+
+      DrawBitmap(DrawBuffer, &Bitmap, Ground.X, Ground.Y);
+    }
+  }
 
   {
     world_position MinChunkP = MapIntoChunkSpace(World, GameState->CameraP, GetMinCorner(CameraBoundsInMeters));
@@ -930,25 +1046,35 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
             };
             v2 ScreenDim = MetersToPixels * World->ChunkDimInMeters.XY;
 
-            // TODO: This is super inefficient, fix it tomorrow!
-            bool32 Found = false;
-            ground_buffer *EmptyBuffer = 0;
+            // TODO: This is super inefficient, fix it!
+            real32 FurthestBufferLengthSq = 0.0f;
+            ground_buffer *FurthestBuffer = 0;
             for(uint32 GroundBufferIndex = 0; GroundBufferIndex < TranState->GroundBufferCount; ++GroundBufferIndex) {
               ground_buffer *GroundBuffer = TranState->GroundBuffers + GroundBufferIndex;
 
               if (AreInSameChunk(World, &GroundBuffer->P, &ChunkCenterP)) {
-                Found = true;
+                FurthestBuffer = 0;
                 break;
-              } else if (!IsValid(GroundBuffer->P)) {
-                EmptyBuffer = GroundBuffer;
+              } else if (IsValid(GroundBuffer->P)) {
+                v3 RelP = Subtract(World, &GroundBuffer->P, &GameState->CameraP);
+                real32 BufferLengthSq = LengthSq(RelP.XY);
+
+                if (FurthestBufferLengthSq < BufferLengthSq) {
+                  FurthestBufferLengthSq = BufferLengthSq;
+                  FurthestBuffer = GroundBuffer;
+                }
+              } else {
+                FurthestBufferLengthSq = Real32Maximum;
+                FurthestBuffer = GroundBuffer;
               }
             }
 
-            if (!Found && EmptyBuffer) {
-              FillGroundChunk(TranState, GameState, EmptyBuffer, &ChunkCenterP);
+            if (FurthestBuffer) {
+              FillGroundChunk(TranState, GameState, FurthestBuffer, &ChunkCenterP);
             }
-
+#if 0
             DrawRectangleOutline(DrawBuffer, ScreenP - 0.5f * ScreenDim, ScreenP + 0.5f * ScreenDim, V3(1.0f, 1.0f, 0.0f));
+#endif
           }
         }
       }
@@ -961,24 +1087,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
 
   temporary_memory SimMemory = BeginTemporaryMemory(&TranState->TranArena);
   sim_region *SimRegion = BeginSim(&TranState->TranArena, GameState, GameState->World, GameState->CameraP, SimBounds, Input->dtForFrame);
-
-  for(uint32 GroundBufferIndex = 0; GroundBufferIndex < TranState->GroundBufferCount; ++GroundBufferIndex) {
-    ground_buffer *GroundBuffer = TranState->GroundBuffers + GroundBufferIndex;
-
-    if (IsValid(GroundBuffer->P)) {
-      loaded_bitmap Bitmap = TranState->GroundBitmapTemplate;
-      Bitmap.Memory = GroundBuffer->Memory;
-
-      v3 Delta = GameState->MetersToPixels * Subtract(GameState->World, &GroundBuffer->P, &GameState->CameraP);
-
-      v2 Ground = {
-        ScreenCenter.X + Delta.X - 0.5f * (real32)Bitmap.Width,
-        ScreenCenter.Y - Delta.Y - 0.5f * (real32)Bitmap.Height
-      };
-
-      DrawBitmap(DrawBuffer, &Bitmap, Ground.X, Ground.Y);
-    }
-  }
 
   // TODO: Move this out into handmade_entity.cpp!
   entity_visible_piece_group PieceGroup;

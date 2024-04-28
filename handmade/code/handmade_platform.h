@@ -19,6 +19,8 @@ extern "C" {
 
 #include <stdint.h>
 #include <stddef.h>
+#include <limits.h>
+#include <float.h>
 
 //
 // NOTE: Compilers
@@ -62,6 +64,8 @@ typedef size_t memory_index;
 
 typedef float real32;
 typedef double real64;
+
+#define Real32Maximum FLT_MAX
 
 #define internal static
 #define local_persist static
@@ -190,8 +194,9 @@ typedef struct game_input {
   game_button_state MouseButtons[5];
   int32 MouseX, MouseY, MouseZ;
 
-  // how much time is supposed to elapse til the end of the frame
-  real32 dtForFrame;
+  bool32 ExecutableReload;
+  real32 dtForFrame; // how much time is supposed to elapse til the end of the frame
+
 
   game_controller_input Controllers[5];
 } game_input;
