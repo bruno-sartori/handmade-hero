@@ -27,10 +27,16 @@ inline void MakeEntitySpatial(sim_entity *Entity, v3 P, v3 dP) {
   Entity->dP = dP;
 }
 
-inline v3 GetEntityGroundPoint(sim_entity *Entity) {
-  v3 Result = Entity->P;
+inline v3 GetEntityGroundPoint(sim_entity *Entity, v3 ForEntityP) {
+  v3 Result = ForEntityP;
   return Result;
 }
+
+inline v3 GetEntityGroundPoint(sim_entity *Entity) {
+  v3 Result = GetEntityGroundPoint(Entity, Entity->P);
+  return Result;
+}
+
 
 inline real32 GetStairGround(sim_entity *Entity, v3 AtGroundPoint) {
   Assert(Entity->Type == EntityType_Stairwell);

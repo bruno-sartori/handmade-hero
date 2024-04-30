@@ -304,7 +304,7 @@ internal void HandleOverlap(game_state *GameState, sim_entity *Mover, sim_entity
   }
 }
 
-internal bool32 SpecullativeCollide(sim_entity *Mover, sim_entity *Region) {
+internal bool32 SpecullativeCollide(sim_entity *Mover, sim_entity *Region, v3 TestP) {
   bool32 Result = true;
   if (Region->Type == EntityType_Stairwell) {
     // TODO: Needs work :)
@@ -312,7 +312,7 @@ internal bool32 SpecullativeCollide(sim_entity *Mover, sim_entity *Region) {
 #if 0
     Result = ((AbsoluteValue(GetEntityGroundPoint(Mover).Z - Ground) > StepHeight) || ((Bary.Y > 0.1f) && (Bary.Y < 0.9f)));
 #endif
-    v3 MoverGroundPoint = GetEntityGroundPoint(Mover);
+    v3 MoverGroundPoint = GetEntityGroundPoint(Mover, TestP);
     real32 Ground = GetStairGround(Region, MoverGroundPoint);
     Result = (AbsoluteValue(MoverGroundPoint.Z - Ground) > StepHeight);
   }
@@ -492,7 +492,7 @@ internal void MoveEntity(game_state *GameState, sim_region *SimRegion, sim_entit
                     if (HitThis) {
                       v3 TestP = Entity->P + tMinTest * PlayerDelta;
 
-                      if (SpecullativeCollide(Entity, TestEntity)) {
+                      if (SpecullativeCollide(Entity, TestEntity, TestP)) {
                         tMin = tMinTest;
                         WallNormalMin = TestWallNormal;
                         HitEntityMin = TestEntity;
