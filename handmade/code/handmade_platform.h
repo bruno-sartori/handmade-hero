@@ -84,6 +84,7 @@ typedef double real64;
 #endif
 
 #define InvalidCodePath Assert(!"Invalid Code Path");
+#define InvalidDefaultCase default: { InvalidCodePath; } break
 
 #define Kilobytes(Value) ((Value) * 1024LL)
 #define Megabytes(Value) (Kilobytes(Value) * 1024LL)

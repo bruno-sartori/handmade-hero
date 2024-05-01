@@ -75,3 +75,7 @@ what is solid and what is not (Tutorial 79)
 * Sparse Virtual Textures - Sean Barret https://www.youtube.com/watch?v=MejJL87yNgI&pp=ygUjc3BhcnNlIHZpcnR1YWwgdGV4dHVyZXMgc2VhbiBiYXJyZXQ%3D
 * Sean Barret - Premultiplied Alpha
 * LRU - Least Recently Used
+* SSE vs AVX (For software renderer)
+* Rasterization
+* Shaders
+* Very good blog, and must see the graphics pipeline -> https://fgiesen.wordpress.com/category/graphics-pipeline/
