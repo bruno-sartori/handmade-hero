@@ -199,7 +199,7 @@ internal add_low_entity_result AddStair(game_state *GameState, uint32 AbsTileX, 
   world_position P = ChunkPositionFromTilePosition(GameState->World, AbsTileX, AbsTileY, AbsTileZ);
   add_low_entity_result Entity = AddGroundedEntity(GameState, EntityType_Stairwell, P, GameState->StairCollision);
   AddFlags(&Entity.Low->Sim, EntityFlag_Collides);
-  Entity.Low->Sim.WalkableDim = Entity.Low->Sim.Collision->TotalVolume.Dim.XY;
+  Entity.Low->Sim.WalkableDim = Entity.Low->Sim.Collision->TotalVolume.Dim.xy;
   Entity.Low->Sim.WalkableHeight = GameState->TypicalFloorHeight;
 
 
@@ -264,7 +264,7 @@ internal add_low_entity_result AddFamiliar(game_state *GameState, uint32 AbsTile
 inline void DrawHitpoints(sim_entity *Entity, render_group *RenderGroup) {
   if (Entity->HitPointMax >= 1) {
     v2 HealthDim = { 0.2f, 0.2f };
-    real32 SpacingX = 1.5f * HealthDim.X;
+    real32 SpacingX = 1.5f * HealthDim.x;
     v2 HitP = { -0.5f * (Entity->HitPointMax - 1) * SpacingX, -0.25f };
     v2 dHitP = { SpacingX, 0.0f };
     for(uint32 HealthIndex = 0; HealthIndex < Entity->HitPointMax; ++HealthIndex) {
@@ -377,13 +377,18 @@ sim_entity_collision_volume_group *MakeNullCollision(game_state *GameState) {
 }
 
 internal void FillGroundChunk(transient_state *TranState, game_state *GameState, ground_buffer *GroundBuffer, world_position *ChunkP) {
+  temporary_memory GroundMemory = BeginTemporaryMemory(&TranState->TranArena);
+  // TODO: Decide what our pushbuffer size is!
+  render_group *RenderGroup = AllocateRenderGroup(&TranState->TranArena, Megabytes(4), 1.0f);
+
+  Clear(RenderGroup, V4(1.0f, 1.0f, 0.0f, 1.0f));
+
   loaded_bitmap *Buffer = &GroundBuffer->Bitmap;
 
   GroundBuffer->P = *ChunkP;
 
   real32 Width = (real32)Buffer->Width;
   real32 Height = (real32)Buffer->Height;
-
 
   for (int32 ChunkOffsetY = -1; ChunkOffsetY <= 1; ++ChunkOffsetY) {
     for (int32 ChunkOffsetX = -1; ChunkOffsetX <= 1; ++ChunkOffsetX) {
@@ -411,7 +416,7 @@ internal void FillGroundChunk(transient_state *TranState, game_state *GameState,
 
         v2 P = Center + Offset - BitmapCenter;
 
-        DrawBitmap(Buffer, Stamp, P.X, P.Y);
+        PushBitmap(RenderGroup, Stamp, P, 0.0f, V2(0, 0));
       }
     }
   }
@@ -435,10 +440,13 @@ internal void FillGroundChunk(transient_state *TranState, game_state *GameState,
         v2 Offset = { Width * RandomUnilateral(&Series), Height * RandomUnilateral(&Series) };
         v2 P = Center + Offset - BitmapCenter;
 
-        DrawBitmap(Buffer, Stamp, P.X, P.Y);
+        PushBitmap(RenderGroup, Stamp, P, 0.0f, V2(0, 0));
       }
     }
   }
+
+  RenderGroupToOutput(RenderGroup, Buffer);
+  EndTemporaryMemory(GroundMemory);
 }
 
 internal void ClearBitmap(loaded_bitmap *Bitmap) {
@@ -743,16 +751,16 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
       } else {
         // NOTE: Use digital movement tuning
         if (Controller->MoveUp.EndedDown) {
-          ConHero->ddP.Y = 1.0f;
+          ConHero->ddP.y = 1.0f;
         }
         if (Controller->MoveDown.EndedDown) {
-          ConHero->ddP.Y = -1.0f;
+          ConHero->ddP.y = -1.0f;
         }
         if (Controller->MoveLeft.EndedDown) {
-          ConHero->ddP.X = -1.0f;
+          ConHero->ddP.x = -1.0f;
         }
         if (Controller->MoveRight.EndedDown) {
-          ConHero->ddP.X = 1.0f;
+          ConHero->ddP.x = 1.0f;
         }
       }
 
@@ -790,7 +798,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
   DrawBuffer->Pitch = Buffer->Pitch;
   DrawBuffer->Memory = Buffer->Memory;
 
-  DrawRectangle(DrawBuffer, V2(0.0f, 0.0f), V2((real32)DrawBuffer->Width, (real32)DrawBuffer->Height), 1.0f, 0.0f, 1.0f);
+  Clear(RenderGroup, V4(1.0f, 0.0f, 1.0f, 0.0f));
 
   v2 ScreenCenter = {
     0.5f * (real32)DrawBuffer->Width,
@@ -807,10 +815,13 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
     if (IsValid(GroundBuffer->P)) {
       loaded_bitmap *Bitmap = &GroundBuffer->Bitmap;
       v3 Delta = Subtract(GameState->World, &GroundBuffer->P, &GameState->CameraP);
-      PushBitmap(RenderGroup, Bitmap, Delta.XY, Delta.Z, 0.5f * V2i(Bitmap->Width, Bitmap->Height));
+      PushBitmap(RenderGroup, Bitmap, Delta.xy, Delta.z, 0.5f * V2i(Bitmap->Width, Bitmap->Height));
     }
   }
 
+  //
+  // NOTE: Ground management
+  //
   {
     world_position MinChunkP = MapIntoChunkSpace(World, GameState->CameraP, GetMinCorner(CameraBoundsInMeters));
     world_position MaxChunkP = MapIntoChunkSpace(World, GameState->CameraP, GetMaxCorner(CameraBoundsInMeters));
@@ -824,11 +835,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
           {
             world_position ChunkCenterP = CenteredChunkPoint(ChunkX, ChunkY, ChunkZ);
             v3 RelP = Subtract(World, &ChunkCenterP, &GameState->CameraP);
-            v2 ScreenP = {
-              ScreenCenter.X + MetersToPixels * RelP.X,
-              ScreenCenter.Y - MetersToPixels * RelP.Y
-            };
-            v2 ScreenDim = MetersToPixels * World->ChunkDimInMeters.XY;
+
 
             // TODO: This is super inefficient, fix it!
             real32 FurthestBufferLengthSq = 0.0f;
@@ -841,7 +848,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
                 break;
               } else if (IsValid(GroundBuffer->P)) {
                 v3 RelP = Subtract(World, &GroundBuffer->P, &GameState->CameraP);
-                real32 BufferLengthSq = LengthSq(RelP.XY);
+                real32 BufferLengthSq = LengthSq(RelP.xy);
 
                 if (FurthestBufferLengthSq < BufferLengthSq) {
                   FurthestBufferLengthSq = BufferLengthSq;
@@ -856,9 +863,8 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
             if (FurthestBuffer) {
               FillGroundChunk(TranState, GameState, FurthestBuffer, &ChunkCenterP);
             }
-#if 0
-            DrawRectangleOutline(DrawBuffer, ScreenP - 0.5f * ScreenDim, ScreenP + 0.5f * ScreenDim, V3(1.0f, 1.0f, 0.0f));
-#endif
+
+            PushRectOutline(RenderGroup, RelP.xy, 0.0f, World->ChunkDimInMeters.xy, V4(1.0f, 1.0f, 0.0f, 1.0f));
           }
         }
       }
@@ -880,7 +886,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
       real32 dt = Input->dtForFrame;
 
       // TODO: This is incorrect, should be computed after update!!
-      real32 ShadowAlpha = 1.0f - 0.5f * Entity->P.Z;
+      real32 ShadowAlpha = 1.0f - 0.5f * Entity->P.z;
       if (ShadowAlpha < 0) {
         ShadowAlpha = 0.0f;
       }
@@ -901,7 +907,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
 
             if (Entity->StorageIndex == ConHero->EntityIndex) {
               if (ConHero->dZ != 0.0f) {
-                Entity->dP.Z = ConHero->dZ;
+                Entity->dP.z = ConHero->dZ;
               }
 
               MoveSpec.UnitMaxAccelVector = true;
@@ -909,7 +915,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
               MoveSpec.Drag = 8.0f;
               ddP = V3(ConHero->ddP, 0);
 
-              if ((ConHero->dSword.X != 0.0f) || (ConHero->dSword.Y != 0.0f)) {
+              if ((ConHero->dSword.x != 0.0f) || (ConHero->dSword.y != 0.0f)) {
                 sim_entity *Sword = Entity->Sword.Ptr;
                 if (Sword && IsSet(Sword, EntityFlag_Nonspatial)) {
                   Sword->DistanceLimit = 5.0f;
@@ -995,13 +1001,12 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
         } break;
 
         case EntityType_Space: {
-#if 0
           for (uint32 VolumeIndex = 0; VolumeIndex < Entity->Collision->VolumeCount; ++VolumeIndex) {
             sim_entity_collision_volume *Volume = Entity->Collision->Volumes + VolumeIndex;
 
-            PushRectOutline(RenderGroup, Volume->OffsetP.XY, 0, Volume->Dim.XY, V4(0, 0.5f, 1.0f, 1), 0.0f);
+            PushRectOutline(RenderGroup, Volume->OffsetP.xy, 0, Volume->Dim.xy, V4(0, 0.5f, 1.0f, 1), 0.0f);
           }
-#endif
+
         } break;
 
         default: {

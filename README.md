@@ -79,3 +79,4 @@ what is solid and what is not (Tutorial 79)
 * Rasterization
 * Shaders
 * Very good blog, and must see the graphics pipeline -> https://fgiesen.wordpress.com/category/graphics-pipeline/
+* Performance-Aware Programming Series https://www.computerenhance.com/i/99218768/performance-aware-programming-series

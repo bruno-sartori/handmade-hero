@@ -191,24 +191,24 @@ internal void EndSim(sim_region *Region, game_state *GameState) {
       NewCameraP.ChunkZ = Stored->P.ChunkZ;
 
 #if 0
-      if (CameraFollowingEntity.High->P.X > (9.0f * TileMap->TileSideInMeters)) {
+      if (CameraFollowingEntity.High->P.x > (9.0f * TileMap->TileSideInMeters)) {
         NewCameraP.AbsTileX += 17;
       }
-      if (CameraFollowingEntity.High->P.X < -(9.0f * TileMap->TileSideInMeters)) {
+      if (CameraFollowingEntity.High->P.x < -(9.0f * TileMap->TileSideInMeters)) {
         NewCameraP.AbsTileX -= 17;
       }
       // IMPORTANT: In the tutorial he puts 5f but 4.5f is better
-      if (CameraFollowingEntity.High->P.Y > (4.5f * TileMap->TileSideInMeters)) {
+      if (CameraFollowingEntity.High->P.y > (4.5f * TileMap->TileSideInMeters)) {
         NewCameraP.AbsTileY += 9;
       }
-      if (CameraFollowingEntity.High->P.Y < -(4.5f * TileMap->TileSideInMeters)) {
+      if (CameraFollowingEntity.High->P.y < -(4.5f * TileMap->TileSideInMeters)) {
         NewCameraP.AbsTileY -= 9;
       }
 #else
     // IMPORTANT: This centers camera on player and add smooth scroll
-    real32 CamZOffset = NewCameraP.Offset.Z;
+    real32 CamZOffset = NewCameraP.Offset.z;
     NewCameraP = Stored->P;
-    NewCameraP.Offset.Z = CamZOffset;
+    NewCameraP.Offset.z = CamZOffset;
 #endif
 
     GameState->CameraP = NewCameraP;
@@ -310,11 +310,11 @@ internal bool32 SpecullativeCollide(sim_entity *Mover, sim_entity *Region, v3 Te
     // TODO: Needs work :)
     real32 StepHeight = 0.1f;
 #if 0
-    Result = ((AbsoluteValue(GetEntityGroundPoint(Mover).Z - Ground) > StepHeight) || ((Bary.Y > 0.1f) && (Bary.Y < 0.9f)));
+    Result = ((AbsoluteValue(GetEntityGroundPoint(Mover).z - Ground) > StepHeight) || ((Bary.y > 0.1f) && (Bary.y < 0.9f)));
 #endif
     v3 MoverGroundPoint = GetEntityGroundPoint(Mover, TestP);
     real32 Ground = GetStairGround(Region, MoverGroundPoint);
-    Result = (AbsoluteValue(MoverGroundPoint.Z - Ground) > StepHeight);
+    Result = (AbsoluteValue(MoverGroundPoint.z - Ground) > StepHeight);
   }
 
   return Result;
@@ -354,7 +354,7 @@ internal void MoveEntity(game_state *GameState, sim_region *SimRegion, sim_entit
 
   // TODO: ODE here!
   v3 Drag = -MoveSpec->Drag * Entity->dP;
-  Drag.Z = 0.0f;
+  Drag.z = 0.0f;
   ddP += Drag;
   if (!IsSet(Entity, EntityFlag_ZSupported)) {
     ddP += V3(0, 0, -9.8f); // NOTE: Gravity!
@@ -416,9 +416,9 @@ internal void MoveEntity(game_state *GameState, sim_region *SimRegion, sim_entit
                 sim_entity_collision_volume *TestVolume = TestEntity->Collision->Volumes + TestVolumeIndex;
 
                 v3 MinkowskiDiameter = {
-                  TestVolume->Dim.X + Volume->Dim.X,
-                  TestVolume->Dim.Y + Volume->Dim.Y,
-                  TestVolume->Dim.Z + Volume->Dim.Z
+                  TestVolume->Dim.x + Volume->Dim.x,
+                  TestVolume->Dim.y + Volume->Dim.y,
+                  TestVolume->Dim.z + Volume->Dim.z
                 };
 
                 v3 MinCorner = -0.5f * MinkowskiDiameter;
@@ -427,12 +427,12 @@ internal void MoveEntity(game_state *GameState, sim_region *SimRegion, sim_entit
                 v3 Rel = (Entity->P + Volume->OffsetP) - (TestEntity->P + TestVolume->OffsetP);
 
                 // TODO: Do we want an open inclusion at the MaxCorner?
-                if (Rel.Z >= MinCorner.Z && Rel.Z < MaxCorner.Z) {
+                if (Rel.z >= MinCorner.z && Rel.z < MaxCorner.z) {
                   test_wall Walls[] = {
-                    { MinCorner.X, Rel.X, Rel.Y, PlayerDelta.X, PlayerDelta.Y, MinCorner.Y, MaxCorner.Y, V3(-1, 0, 0) },
-                    { MaxCorner.X, Rel.X, Rel.Y, PlayerDelta.X, PlayerDelta.Y, MinCorner.Y, MaxCorner.Y, V3(1, 0, 0) },
-                    { MinCorner.Y, Rel.Y, Rel.X, PlayerDelta.Y, PlayerDelta.X, MinCorner.X, MaxCorner.X, V3(0, -1, 0) },
-                    { MaxCorner.Y, Rel.Y, Rel.X, PlayerDelta.Y, PlayerDelta.X, MinCorner.X, MaxCorner.X, V3(0, 1, 0) },
+                    { MinCorner.x, Rel.x, Rel.y, PlayerDelta.x, PlayerDelta.y, MinCorner.y, MaxCorner.y, V3(-1, 0, 0) },
+                    { MaxCorner.x, Rel.x, Rel.y, PlayerDelta.x, PlayerDelta.y, MinCorner.y, MaxCorner.y, V3(1, 0, 0) },
+                    { MinCorner.y, Rel.y, Rel.x, PlayerDelta.y, PlayerDelta.x, MinCorner.x, MaxCorner.x, V3(0, -1, 0) },
+                    { MaxCorner.y, Rel.y, Rel.x, PlayerDelta.y, PlayerDelta.x, MinCorner.x, MaxCorner.x, V3(0, 1, 0) },
                   };
 
                   if (IsSet(TestEntity, EntityFlag_Traversable)) {
@@ -553,11 +553,11 @@ internal void MoveEntity(game_state *GameState, sim_region *SimRegion, sim_entit
     }
   }
 
-  Ground += Entity->P.Z - GetEntityGroundPoint(Entity).Z;
+  Ground += Entity->P.z - GetEntityGroundPoint(Entity).z;
   // TODO: This has to become real height handling / ground collision / etc.
-  if ((Entity->P.Z <= Ground) || (IsSet(Entity, EntityFlag_ZSupported) && (Entity->dP.Z == 0.0f))) {
-    Entity->P.Z = Ground;
-    Entity->dP.Z = 0;
+  if ((Entity->P.z <= Ground) || (IsSet(Entity, EntityFlag_ZSupported) && (Entity->dP.z == 0.0f))) {
+    Entity->P.z = Ground;
+    Entity->dP.z = 0;
     AddFlags(Entity, EntityFlag_ZSupported);
   } else {
     ClearFlags(Entity, EntityFlag_ZSupported);
@@ -568,16 +568,16 @@ internal void MoveEntity(game_state *GameState, sim_region *SimRegion, sim_entit
   }
 
   // TODO: Change to using the acceleration vector
-  if ((Entity->dP.X == 0.0f) && (Entity->dP.Y == 0.0f)) {
+  if ((Entity->dP.x == 0.0f) && (Entity->dP.y == 0.0f)) {
     // NOTE: Leave FacingDirection whatever it was
-  } else if (AbsoluteValue(Entity->dP.X) > AbsoluteValue(Entity->dP.Y)) {
-    if (Entity->dP.X > 0) {
+  } else if (AbsoluteValue(Entity->dP.x) > AbsoluteValue(Entity->dP.y)) {
+    if (Entity->dP.x > 0) {
       Entity->FacingDirection = 0;
     } else {
       Entity->FacingDirection = 2;
     }
   } else {
-    if (Entity->dP.Y > 0) {
+    if (Entity->dP.y > 0) {
       Entity->FacingDirection = 1;
     } else {
       Entity->FacingDirection = 3;
