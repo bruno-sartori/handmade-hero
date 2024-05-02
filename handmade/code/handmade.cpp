@@ -1028,9 +1028,11 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
   real32 Angle = GameState->Time;
 
   // TODO: Lets add a Perp operator!!!
-  v2 Origin = ScreenCenter + 10.0f * V2(Sin(Angle), 0.0f);
-  v2 XAxis = (100.0f + 25.0f * Cos(4.2f * Angle)) * V2(Cos(Angle), Sin(Angle));
-  v2 YAxis = (100.0f + 50.0f * Sin(3.9f * Angle)) * V2(Cos(Angle + 1.0f), Sin(Angle + 1.0f));
+  v2 Origin = ScreenCenter;
+  v2 XAxis = (50.0f + 50.0f * Cos(Angle)) * V2(Cos(Angle), Sin(Angle));
+  //v2 YAxis = Perp(XAxis);
+  v2 YAxis = (50.0f + 50.0f * Cos(Angle)) * V2(Cos(Angle + 1.0f), Sin(Angle + 1.0f));
+
   uint32 PIndex = 0;
   render_entry_coordinate_system *C = PushCoordninateSystem(RenderGroup, Origin, XAxis, YAxis, V4(0.5f + 0.5f * Sin(Angle), 0.5f + 0.5f * Sin(2.9f * Angle),  0.5f + 0.5f * Cos(9.9f * Angle), 1));
   for (real32 Y = 0.0f; Y < 1.0f; Y += 0.25f) {
