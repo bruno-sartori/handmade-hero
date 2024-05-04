@@ -107,18 +107,26 @@ internal loaded_bitmap DEBUGLoadBMP(thread_context *Thread, debug_platform_read_
       for (int32 X = 0; X < Header->Width; ++X) {
         uint32 C = *SourceDest;
 
-        real32 R = (real32)((C & RedMask) >> RedShiftDown);
-        real32 G = (real32)((C & GreenMask) >> GreenShiftDown);
-        real32 B = (real32)((C & BlueMask) >> BlueShiftDown);
-        real32 A = (real32)((C & AlphaMask) >> AlphaShiftDown);
-        real32 AN = (A / 255.0f);
+        v4 Texel = {
+          (real32)((C & RedMask) >> RedShiftDown),
+          (real32)((C & GreenMask) >> GreenShiftDown),
+          (real32)((C & BlueMask) >> BlueShiftDown),
+          (real32)((C & AlphaMask) >> AlphaShiftDown)
+        };
+
+        Texel = SRGB255ToLinear1(Texel);
 #if 1
         // NOTE: Premultiplied Alpha
-        R = R*AN;
-        G = G*AN;
-        B = B*AN;
+        Texel.rgb *= Texel.a;
 #endif
-        *SourceDest++ = (((uint32)(A + 0.5f) << 24) | ((uint32)(R + 0.5f) << 16) | ((uint32)(G + 0.5f) << 8) | ((uint32)(B + 0.5f) << 0));
+        Texel = Linear1ToSRGB255(Texel);
+
+        *SourceDest++ = (
+          ((uint32)(Texel.a + 0.5f) << 24) |
+          ((uint32)(Texel.r + 0.5f) << 16) |
+          ((uint32)(Texel.g + 0.5f) << 8) |
+          ((uint32)(Texel.b + 0.5f) << 0)
+        );
       }
     }
   }
@@ -1039,13 +1047,16 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
   #endif
   uint32 PIndex = 0;
   real32 CAngle = 5.0f * Angle;
+  #if 0
   v4 Color = V4(
     0.5f + 0.5f * Sin(CAngle),
     0.5f + 0.5f * Sin(2.9f * CAngle),
     0.5f + 0.5f * Cos(9.9f * CAngle),
     0.5f + 0.5F * Sin(10.0f * CAngle)
   );
-
+#else
+  v4 Color = V4(1.0f, 1.0f, 1.0f, 1.0f);
+#endif
   render_entry_coordinate_system *C = PushCoordninateSystem(RenderGroup, /*V2(Disp, 0) + */Origin - 0.5f * XAxis - 0.5f * YAxis, XAxis, YAxis, Color, &GameState->Tree);
   for (real32 Y = 0.0f; Y < 1.0f; Y += 0.25f) {
     for (real32 X = 0.0f; X < 1.0f; X += 0.25f) {
