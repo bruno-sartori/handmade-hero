@@ -83,3 +83,4 @@ what is solid and what is not (Tutorial 79)
 * Texture map and texels
 * Subpixel precision
 * texture filtering (or linear texture filtering) (we are using simple bilinear filter on texture (on tutorial 93))
+* Naughty Dogs 2010 Gamma Correct Rendering -> https://www.slideshare.net/naughty_dog/lighting-shading-by-john-hable - https://www.gdcvault.com/play/1012351/Uncharted-2-HDR

@@ -1038,7 +1038,15 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
     v2 YAxis = Perp(XAxis);
   #endif
   uint32 PIndex = 0;
-  render_entry_coordinate_system *C = PushCoordninateSystem(RenderGroup, /*V2(Disp, 0) + */Origin - 0.5f * XAxis - 0.5f * YAxis, XAxis, YAxis, V4(0.5f + 0.5f * Sin(Angle), 0.5f + 0.5f * Sin(2.9f * Angle),  0.5f + 0.5f * Cos(9.9f * Angle), 1), &GameState->Tree);
+  real32 CAngle = 5.0f * Angle;
+  v4 Color = V4(
+    0.5f + 0.5f * Sin(CAngle),
+    0.5f + 0.5f * Sin(2.9f * CAngle),
+    0.5f + 0.5f * Cos(9.9f * CAngle),
+    0.5f + 0.5F * Sin(10.0f * CAngle)
+  );
+
+  render_entry_coordinate_system *C = PushCoordninateSystem(RenderGroup, /*V2(Disp, 0) + */Origin - 0.5f * XAxis - 0.5f * YAxis, XAxis, YAxis, Color, &GameState->Tree);
   for (real32 Y = 0.0f; Y < 1.0f; Y += 0.25f) {
     for (real32 X = 0.0f; X < 1.0f; X += 0.25f) {
       C->Points[PIndex++] = V2(X, Y);
