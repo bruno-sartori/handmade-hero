@@ -123,6 +123,24 @@ inline real32 Clamp01(real32 Value) {
   return Clamp(0.0f, Value, 1.0f);
 }
 
+inline real32 SafeRatioN(real32 Numerator, real32 Divisor, real32 N) {
+  real32 Result = N;
+
+  if (Divisor != 0.0f) {
+    Result = Numerator / Divisor;
+  }
+
+  return Result;
+}
+
+inline real32 SafeRatio0(real32 Numerator, real32 Divisor) {
+  return SafeRatioN(Numerator, Divisor, 0.0f);
+}
+
+inline real32 SafeRatio1(real32 Numerator, real32 Divisor) {
+  return SafeRatioN(Numerator, Divisor, 1.0f);
+}
+
 //
 // NOTE: V2 operations
 //
@@ -307,22 +325,106 @@ inline v3 Clamp01(v3 Value) {
   return Result;
 }
 
-inline real32 SafeRatioN(real32 Numerator, real32 Divisor, real32 N) {
-  real32 Result = N;
 
-  if (Divisor != 0.0f) {
-    Result = Numerator / Divisor;
-  }
+//
+// NOTE: v4 Operations
+//
+inline v4 operator*(real32 A, v4 B) {
+  v4 Result;
+
+  Result.x = A*B.x;
+  Result.y = A*B.y;
+  Result.z = A*B.z;
+  Result.w = A*B.w;
 
   return Result;
 }
 
-inline real32 SafeRatio0(real32 Numerator, real32 Divisor) {
-  return SafeRatioN(Numerator, Divisor, 0.0f);
+inline v4 operator*(v4 B, real32 A) {
+  v4 Result = A * B;
+
+  return Result;
 }
 
-inline real32 SafeRatio1(real32 Numerator, real32 Divisor) {
-  return SafeRatioN(Numerator, Divisor, 1.0f);
+inline v4 &operator*=(v4 &B, real32 A) {
+  B = A * B;
+
+  return B;
+}
+
+inline v4 operator -(v4 A) {
+  v4 Result;
+
+  Result.x = -A.x;
+  Result.y = -A.y;
+  Result.z = -A.z;
+  Result.w = -A.w;
+
+  return Result;
+}
+
+inline v4 operator+(v4 A, v4 B) {
+  v4 Result;
+
+  Result.x = A.x + B.x;
+  Result.y = A.y + B.y;
+  Result.z = A.z + B.z;
+  Result.w = A.w + B.w;
+
+  return Result;
+}
+
+inline v4 &operator+=(v4 &A, v4 B) {
+  A = A + B;
+
+  return A;
+}
+
+inline v4 operator-(v4 A, v4 B) {
+  v4 Result;
+
+  Result.x = A.x - B.x;
+  Result.y = A.y - B.y;
+  Result.z = A.z - B.z;
+  Result.w = A.w - B.w;
+
+  return Result;
+}
+
+inline v4 Hadamard(v4 A, v4 B) {
+  v4 Result = { A.x * B.x, A.y * B.y, A.z * B.z, A.w * B.w };
+  return Result;
+}
+
+inline real32 Inner(v4 A, v4 B) {
+  real32 Result = (A.x * B.x) + (A.y * B.y) + (A.z * B.z) + (A.w * B.w);
+  return Result;
+}
+
+inline real32 LengthSq(v4 A) {
+  real32 Result = Inner(A, A);
+  return Result;
+}
+
+inline real32 Length(v4 A) {
+  real32 Result = SquareRoot(LengthSq(A));
+  return Result;
+}
+
+inline v4 Clamp01(v4 Value) {
+  v4 Result;
+
+  Result.x =  Clamp01(Value.x);
+  Result.y =  Clamp01(Value.y);
+  Result.z =  Clamp01(Value.z);
+  Result.w = Clamp01(Value.w);
+
+  return Result;
+}
+
+inline v4 Lerp(v4 A, real32 t, v4 B) {
+  v4 Result = (1.0f - t) * A + t * B;
+  return Result;
 }
 
 //
