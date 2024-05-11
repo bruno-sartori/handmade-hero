@@ -360,14 +360,11 @@ internal void MoveEntity(game_state *GameState, sim_region *SimRegion, sim_entit
     ddP += V3(0, 0, -9.8f); // NOTE: Gravity!
   }
 
-  v3 OldPlayerP = Entity->P;
   v3 PlayerDelta = (0.5f * ddP * Square(dt) + Entity->dP * dt); // delta between player position and the position it will be if no collision occurs
   Entity->dP = ddP * dt + Entity->dP; // P'' (velocity) = at + v
 
   // TODO: Upgrade physical motion routines to handle capping the maximum velocity?
   Assert(LengthSq(Entity->dP) <= Square(SimRegion->MaxEntityVelocity));
-
-  v3 NewPlayerP = OldPlayerP + PlayerDelta;
 
   /**
    *

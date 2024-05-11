@@ -47,7 +47,12 @@ inline v4 UnscaleAndBiasNormal(v4 Normal) {
   return Result;
 }
 
-internal void DrawRectangle(loaded_bitmap *Buffer, v2 vMin, v2 vMax, real32 R, real32 G, real32 B, real32 A = 1.0f) {
+internal void DrawRectangle(loaded_bitmap *Buffer, v2 vMin, v2 vMax, v4 Color) {
+  real32 R = Color.r;
+  real32 G = Color.g;
+  real32 B = Color.b;
+  real32 A = Color.a;
+
   int32 MinX = RoundReal32ToInt32(vMin.x);
   int32 MinY = RoundReal32ToInt32(vMin.y);
   int32 MaxX = RoundReal32ToInt32(vMax.x);
@@ -69,13 +74,13 @@ internal void DrawRectangle(loaded_bitmap *Buffer, v2 vMin, v2 vMax, real32 R, r
     MaxY = Buffer->Height;
   }
 
-  uint32 Color = ((RoundReal32ToUInt32(A * 255.0f) << 24) | (RoundReal32ToUInt32(R * 255.0f) << 16) | (RoundReal32ToUInt32(G * 255.0f) << 8) | (RoundReal32ToUInt32(B * 255.0f) << 0));
+  uint32 Color32 = ((RoundReal32ToUInt32(A * 255.0f) << 24) | (RoundReal32ToUInt32(R * 255.0f) << 16) | (RoundReal32ToUInt32(G * 255.0f) << 8) | (RoundReal32ToUInt32(B * 255.0f) << 0));
   uint8 *Row = ((uint8 *)Buffer->Memory + MinX * BITMAP_BITES_PER_PIXEL + MinY * Buffer->Pitch);
 
   for (int Y = MinY; Y < MaxY; ++Y) {
     uint32 *Pixel = (uint32 *)Row;
     for (int X = MinX; X < MaxX; ++X) {
-      *Pixel++ = Color;
+      *Pixel++ = Color32;
     }
     Row += Buffer->Pitch;
   }
@@ -118,11 +123,11 @@ inline v3 SampleEnvironmentMap(v2 ScreenSpaceUV, v3 Normal, real32 Roughness, en
   uint32 LODIndex = (uint32)(Roughness * (real32)(ArrayCount(Map->LOD) - 1) + 0.5f);
   Assert(LODIndex < ArrayCount(Map->LOD));
 
-  loaded_bitmap *LOD = Map->LOD[LODIndex];
+  loaded_bitmap *LOD = &Map->LOD[LODIndex];
 
   // TODO: Do intersection math to determine where we should be!
-  real32 tX = 0.0f;
-  real32 tY = 0.0f;
+  real32 tX = LOD->Width / 2 + Normal.x * (real32)(LOD->Width / 2);
+  real32 tY = LOD->Height / 2 + Normal.y * (real32)(LOD->Height / 2);
 
   int32 X = (int32)tX;
   int32 Y = (int32)tY;
@@ -247,7 +252,7 @@ internal void DrawRectangleSlowly(loaded_bitmap *Buffer, v2 Origin, v2 XAxis, v2
           real32 tFarMap = 0.0f;
           if (tEnvMap < -0.5f) {
             FarMap = Bottom;
-            tFarMap = 2.0f * (tEnvMap + 1.0f);
+            tFarMap = -1.0f - 2.0f * tEnvMap;
           } else if (tEnvMap > 0.5f) {
             FarMap = Top;
             tFarMap = 2.0f * (tEnvMap - 0.5f);
@@ -370,14 +375,50 @@ internal void DrawBitmap(loaded_bitmap *Buffer, loaded_bitmap *Bitmap, real32 Re
   }
 }
 
+internal void ChangeSaturation(loaded_bitmap *Buffer, real32 Level) {
+  uint8 *DestRow = (uint8 *)Buffer->Memory;
+
+  for (int Y = 0; Y < Buffer->Height; ++Y) {
+    uint32 *Dest = (uint32 *)DestRow;
+
+    for (int X = 0; X < Buffer->Width; ++X) {
+      v4 D = {
+        (real32)((*Dest >> 16) & 0xFF),
+        (real32)((*Dest >> 8) & 0xFF),
+        (real32)((*Dest >> 0) & 0xFF),
+        (real32)((*Dest >> 24) & 0xFF)
+      };
+      D = SRGB255ToLinear1(D);
+
+      real32 Avg = (1.0f / 3.0f) * (D.r + D.g + D.b);
+      v3 Delta = V3(D.r - Avg, D.g - Avg, D.b - Avg);
+
+      v4 Result = ToV4(V3(Avg, Avg, Avg) + Level * Delta, D.a);
+
+      Result = Linear1ToSRGB255(Result);
+
+      *Dest = (
+        ((uint32)(Result.a + 0.5f) << 24) |
+        ((uint32)(Result.r + 0.5f) << 16) |
+        ((uint32)(Result.g + 0.5f) << 8) |
+        ((uint32)(Result.b + 0.5f) << 0)
+      );
+
+      ++Dest;
+    }
+
+    DestRow += Buffer->Pitch;
+  }
+}
+
 inline void DrawRectangleOutline(loaded_bitmap *Buffer, v2 vMin, v2 vMax, v3 Color, real32 R = 2.0f) {
   // NOTE: Top and bottom
-  DrawRectangle(Buffer, V2(vMin.x - R, vMin.y - R), V2(vMax.x + R, vMin.y + R), Color.r, Color.g, Color.b);
-  DrawRectangle(Buffer, V2(vMin.x - R, vMax.y - R), V2(vMax.x + R, vMax.y + R), Color.r, Color.g, Color.b);
+  DrawRectangle(Buffer, V2(vMin.x - R, vMin.y - R), V2(vMax.x + R, vMin.y + R), ToV4(Color, 1.0f));
+  DrawRectangle(Buffer, V2(vMin.x - R, vMax.y - R), V2(vMax.x + R, vMax.y + R), ToV4(Color, 1.0f));
 
   // NOTE: Left and right
-  DrawRectangle(Buffer, V2(vMin.x - R, vMin.y - R), V2(vMin.x + R, vMax.y + R), Color.r, Color.g, Color.b);
-  DrawRectangle(Buffer, V2(vMax.x - R, vMin.y - R), V2(vMax.x + R, vMax.y + R), Color.r, Color.g, Color.b);
+  DrawRectangle(Buffer, V2(vMin.x - R, vMin.y - R), V2(vMin.x + R, vMax.y + R), ToV4(Color, 1.0f));
+  DrawRectangle(Buffer, V2(vMax.x - R, vMin.y - R), V2(vMax.x + R, vMax.y + R), ToV4(Color, 1.0f));
 }
 
 internal void DrawMatte(loaded_bitmap *Buffer, loaded_bitmap *Bitmap, real32 RealX, real32 RealY, real32 CAlpha = 1.0f) {
@@ -477,7 +518,15 @@ internal void RenderGroupToOutput(render_group *RenderGroup, loaded_bitmap *Outp
       case RenderGroupEntryType_render_entry_clear: {
         render_entry_clear *Entry = (render_entry_clear *)Data;
 
-        DrawRectangle(OutputTarget, V2(0.0f, 0.0f), V2((real32)OutputTarget->Width, (real32)OutputTarget->Height), Entry->Color.r,Entry->Color.g, Entry->Color.b, Entry->Color.a);
+        DrawRectangle(OutputTarget, V2(0.0f, 0.0f), V2((real32)OutputTarget->Width, (real32)OutputTarget->Height), Entry->Color);
+
+        BaseAddress += sizeof(*Entry);
+      } break;
+
+      case RenderGroupEntryType_render_entry_saturation: {
+        render_entry_saturation *Entry = (render_entry_saturation *)Data;
+
+        ChangeSaturation(OutputTarget, Entry->Level);
 
         BaseAddress += sizeof(*Entry);
       } break;
@@ -496,7 +545,7 @@ internal void RenderGroupToOutput(render_group *RenderGroup, loaded_bitmap *Outp
         render_entry_rectangle *Entry = (render_entry_rectangle *)Data;
 
         v2 P = GetRenderEntityBasisP(RenderGroup, &Entry->EntityBasis, ScreenCenter);
-        DrawRectangle(OutputTarget, P, P + Entry->Dim, Entry->R, Entry->G, Entry->B);
+        DrawRectangle(OutputTarget, P, P + Entry->Dim, Entry->Color);
 
         BaseAddress += sizeof(*Entry);
       } break;
@@ -510,15 +559,15 @@ internal void RenderGroupToOutput(render_group *RenderGroup, loaded_bitmap *Outp
         v4 Color = { 1, 1, 0, 1};
         v2 Dim = {2, 2};
         v2 P = Entry->Origin;
-        DrawRectangle(OutputTarget, P - Dim, P + Dim, Color.r, Color.g, Color.b);
+        DrawRectangle(OutputTarget, P - Dim, P + Dim, Color);
 
         P = Entry->Origin + Entry->XAxis;
-        DrawRectangle(OutputTarget, P - Dim, P + Dim, Color.r, Color.g, Color.b);
+        DrawRectangle(OutputTarget, P - Dim, P + Dim, Color);
 
         P = Entry->Origin + Entry->YAxis;
-        DrawRectangle(OutputTarget, P - Dim, P + Dim, Color.r, Color.g, Color.b);
+        DrawRectangle(OutputTarget, P - Dim, P + Dim, Color);
 
-        DrawRectangle(OutputTarget, vMax - Dim, vMax + Dim, Color.r, Color.g, Color.b);
+        DrawRectangle(OutputTarget, vMax - Dim, vMax + Dim, Color);
 
 #if 0
         for (uint32 PIndex = 0; PIndex < ArrayCount(Entry->Points); ++PIndex) {
@@ -576,10 +625,7 @@ inline void PushPiece(render_group *Group, loaded_bitmap *Bitmap, v2 Offset, rea
     Entry->EntityBasis.Offset = Group->MetersToPixels * V2(Offset.x, -Offset.y) - Align;
     Entry->EntityBasis.OffsetZ = OffsetZ;
     Entry->EntityBasis.EntityZC = EntityZC;
-    Entry->R = Color.r;
-    Entry->G = Color.g;
-    Entry->B = Color.b;
-    Entry->A = Color.a;
+    Entry->Color = Color;
   }
 }
 
@@ -596,10 +642,7 @@ inline void PushRect(render_group *Group, v2 Offset, real32 OffsetZ, v2 Dim, v4 
     Entry->EntityBasis.Offset = Group->MetersToPixels * V2(Offset.x, -Offset.y) - HalfDim;
     Entry->EntityBasis.OffsetZ = OffsetZ;
     Entry->EntityBasis.EntityZC = EntityZC;
-    Entry->R = Color.r;
-    Entry->G = Color.g;
-    Entry->B = Color.b;
-    Entry->A = Color.a;
+    Entry->Color = Color;
     Entry->Dim = Group->MetersToPixels * Dim;
   }
 }
@@ -622,6 +665,14 @@ inline void Clear(render_group *Group, v4 Color) {
     Entry->Color = Color;
   }
 }
+
+inline void Saturation(render_group *Group, real32 Level) {
+  render_entry_saturation *Entry = PushRenderElement(Group, render_entry_saturation);
+  if (Entry) {
+    Entry->Level = Level;
+  }
+}
+
 
 inline render_entry_coordinate_system *PushCoordninateSystem(render_group *Group, v2 Origin, v2 XAxis, v2 YAxis, v4 Color, loaded_bitmap *Texture, loaded_bitmap *NormalMap, environment_map *Top, environment_map *Middle, environment_map *Bottom) {
   render_entry_coordinate_system *Entry = PushRenderElement(Group, render_entry_coordinate_system);
