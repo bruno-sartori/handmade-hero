@@ -9,6 +9,7 @@ struct loaded_bitmap {
 
 struct environment_map {
   loaded_bitmap LOD[4]; // Levels of Details
+  real32 Pz;
 };
 struct render_basis {
   v3 P;
