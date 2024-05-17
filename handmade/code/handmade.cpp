@@ -69,6 +69,7 @@ internal loaded_bitmap DEBUGLoadBMP(thread_context *Thread, debug_platform_read_
     Result.Width = Header->Width;
     Result.Height = Header->Height;
 
+    Assert(Result.Height >= 0);
     Assert(Header->Compression == 3);
 
     // NOTE: If you are using this generically for some reason,
@@ -130,8 +131,12 @@ internal loaded_bitmap DEBUGLoadBMP(thread_context *Thread, debug_platform_read_
     }
   }
 
-  Result.Pitch = -Result.Width * BITMAP_BITES_PER_PIXEL;
-  Result.Memory = (uint8 *)Result.Memory - Result.Pitch * (Result.Height - 1);
+  Result.Pitch = Result.Width * BITMAP_BITES_PER_PIXEL;
+
+#if 0
+  Result.Memory = (uint8 *)Result.Memory + Result.Pitch * (Result.Height - 1);
+  Result.Pitch = -Result.Pitch;
+#endif
 
   return Result;
 }
@@ -407,7 +412,7 @@ internal void FillGroundChunk(transient_state *TranState, game_state *GameState,
       // TODO: Look into wang hashing or some other spatial seed generation "thing"!
       random_series Series = RandomSeed(139 * ChunkX + 593 * ChunkY + 329 * ChunkZ);
 
-      v2 Center = V2(ChunkOffsetX * Width, -ChunkOffsetY * Height);
+      v2 Center = V2(ChunkOffsetX * Width, ChunkOffsetY * Height);
 
       for (uint32 GrassIndex = 0; GrassIndex < 100; ++GrassIndex) {
         loaded_bitmap *Stamp;
@@ -438,7 +443,7 @@ internal void FillGroundChunk(transient_state *TranState, game_state *GameState,
       // TODO: Look into wang hashing or some other spatial seed generation "thing"!
       random_series Series = RandomSeed(139 * ChunkX + 593 * ChunkY + 329 * ChunkZ);
 
-      v2 Center = V2(ChunkOffsetX * Width, -ChunkOffsetY * Height);
+      v2 Center = V2(ChunkOffsetX * Width, ChunkOffsetY * Height);
 
       for (uint32 GrassIndex = 0; GrassIndex < 30; ++GrassIndex) {
         loaded_bitmap *Stamp = GameState->Tuft + RandomChoice(&Series, ArrayCount(GameState->Tuft));
@@ -625,6 +630,15 @@ internal void RequestGroundBuffers(world_position CenterP, rectangle3 Bounds) {
 }
 #endif
 
+inline v2 TopDownAlign(loaded_bitmap *Bitmap, v2 Align) {
+  Align.y = (real32)(Bitmap->Height - 1) - Align.y;
+  return Align;
+}
+
+internal void SetTopDownAlign(hero_bitmaps *Bitmap, v2 Align) {
+  Bitmap->Align = TopDownAlign(&Bitmap->Head, Align);
+}
+
 extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
   Assert((&Input->Controllers[0].Terminator - &Input->Controllers[0].Buttons[0]) == (ArrayCount(Input->Controllers[0].Buttons)));
 
@@ -694,25 +708,25 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
     Bitmap->Head = DEBUGLoadBMP(Thread, Memory->DEBUGPlatformReadEntireFile, "test/test_hero_right_head.bmp");
     Bitmap->Cape = DEBUGLoadBMP(Thread, Memory->DEBUGPlatformReadEntireFile, "test/test_hero_right_cape.bmp");
     Bitmap->Torso = DEBUGLoadBMP(Thread, Memory->DEBUGPlatformReadEntireFile, "test/test_hero_right_torso.bmp");
-    Bitmap->Align = V2(72, 182);
+    SetTopDownAlign(Bitmap, V2(72, 182));
     ++Bitmap;
 
     Bitmap->Head  = DEBUGLoadBMP(Thread, Memory->DEBUGPlatformReadEntireFile, "test/test_hero_back_head.bmp");
     Bitmap->Cape = DEBUGLoadBMP(Thread, Memory->DEBUGPlatformReadEntireFile, "test/test_hero_back_cape.bmp");
     Bitmap->Torso = DEBUGLoadBMP(Thread, Memory->DEBUGPlatformReadEntireFile, "test/test_hero_back_torso.bmp");
-    Bitmap->Align = V2(72, 182);
+    SetTopDownAlign(Bitmap, V2(72, 182));
     ++Bitmap;
 
     Bitmap->Head = DEBUGLoadBMP(Thread, Memory->DEBUGPlatformReadEntireFile, "test/test_hero_left_head.bmp");
     Bitmap->Cape = DEBUGLoadBMP(Thread, Memory->DEBUGPlatformReadEntireFile, "test/test_hero_left_cape.bmp");
     Bitmap->Torso = DEBUGLoadBMP(Thread, Memory->DEBUGPlatformReadEntireFile, "test/test_hero_left_torso.bmp");
-    Bitmap->Align = V2(72, 182);
+    SetTopDownAlign(Bitmap, V2(72, 182));
     ++Bitmap;
 
     Bitmap->Head = DEBUGLoadBMP(Thread, Memory->DEBUGPlatformReadEntireFile, "test/test_hero_front_head.bmp");
     Bitmap->Cape = DEBUGLoadBMP(Thread, Memory->DEBUGPlatformReadEntireFile, "test/test_hero_front_cape.bmp");
     Bitmap->Torso = DEBUGLoadBMP(Thread, Memory->DEBUGPlatformReadEntireFile, "test/test_hero_front_torso.bmp");
-    Bitmap->Align = V2(72, 182);
+    SetTopDownAlign(Bitmap, V2(72, 182));
     ++Bitmap;
 
     random_series Series = RandomSeed(1234);
@@ -1027,8 +1041,9 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
             if (FurthestBuffer) {
               FillGroundChunk(TranState, GameState, FurthestBuffer, &ChunkCenterP);
             }
-
+#if 0
             PushRectOutline(RenderGroup, RelP.xy, 0.0f, World->ChunkDimInMeters.xy, V4(1.0f, 1.0f, 0.0f, 1.0f));
+#endif
           }
         }
       }
@@ -1100,7 +1115,8 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
         } break;
 
         case EntityType_Wall: {
-          PushBitmap(RenderGroup, &GameState->Tree, V2(0, 0), 0, V2(40, 80));
+          v2 Alignment = TopDownAlign(&GameState->Tree, V2(40, 80));
+          PushBitmap(RenderGroup, &GameState->Tree, V2(0, 0), 0, Alignment);
         } break;
 
         case EntityType_Stairwell: {
@@ -1117,8 +1133,9 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
             ClearCollisionRulesFor(GameState, Entity->StorageIndex);
             MakeEntityNonSpatial(Entity);
           }
+          v2 Alignment = TopDownAlign(&GameState->Sword, V2(29, 10));
           PushBitmap(RenderGroup, &GameState->Shadow, V2(0, 0), 0, HeroBitmaps->Align, ShadowAlpha, 0.0f);
-          PushBitmap(RenderGroup, &GameState->Sword, V2(0, 0), 0, V2(29, 10));
+          PushBitmap(RenderGroup, &GameState->Sword, V2(0, 0), 0, Alignment);
         } break;
 
         case EntityType_Familiar: {
@@ -1185,7 +1202,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
       Basis->P = GetEntityGroundPoint(Entity);
     }
   }
-
+#if 0
   GameState->Time += Input->dtForFrame;
 
   v3 MapColor[] = {
@@ -1273,6 +1290,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
     PushCoordninateSystem(RenderGroup, MapP, XAxis, YAxis, V4(1.0f, 1.0f, 1.0f, 1.0f), LOD, 0, 0, 0, 0);
     MapP += YAxis + V2(0.0f, 6.0f);
   }
+#endif
 
   RenderGroupToOutput(RenderGroup, DrawBuffer);
 

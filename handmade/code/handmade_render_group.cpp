@@ -566,17 +566,15 @@ internal void DrawMatte(loaded_bitmap *Buffer, loaded_bitmap *Bitmap, real32 Rea
 }
 
 inline v2 GetRenderEntityBasisP(render_group *RenderGroup, render_entity_basis *EntityBasis, v2 ScreenCenter) {
+  // TODO: ZHANDLING
+
   v3 EntityBaseP = EntityBasis->Basis->P;
   real32 ZFudge = (1.0f + 0.1f * (EntityBaseP.z + EntityBasis->OffsetZ));
 
-  real32 EntityGroundPointX = ScreenCenter.x + RenderGroup->MetersToPixels * ZFudge * EntityBaseP.x;
-  real32 EntityGroundPointY = ScreenCenter.y - RenderGroup->MetersToPixels * ZFudge * EntityBaseP.y;
-  real32 EntityZ = -RenderGroup->MetersToPixels * EntityBaseP.z;
+  v2 EntityGroundPoint = ScreenCenter + RenderGroup->MetersToPixels * ZFudge * EntityBaseP.xy;
+  real32 EntityZ = RenderGroup->MetersToPixels * EntityBaseP.z;
 
-  v2 Center = {
-    EntityGroundPointX + EntityBasis->Offset.x,
-    EntityGroundPointY + EntityBasis->Offset.y + EntityBasis->EntityZC * EntityZ
-  };
+  v2 Center = EntityGroundPoint + EntityBasis->Offset + V2(0, EntityBasis->EntityZC * EntityZ);
 
   return Center;
 }
@@ -611,11 +609,10 @@ internal void RenderGroupToOutput(render_group *RenderGroup, loaded_bitmap *Outp
 
       case RenderGroupEntryType_render_entry_bitmap: {
         render_entry_bitmap *Entry = (render_entry_bitmap *)Data;
-#if 0
+
         v2 P = GetRenderEntityBasisP(RenderGroup, &Entry->EntityBasis, ScreenCenter);
         Assert(Entry->Bitmap);
-        DrawBitmap(OutputTarget, Entry->Bitmap, P.x, P.y, Entry->A);
-#endif
+        DrawBitmap(OutputTarget, Entry->Bitmap, P.x, P.y, Entry->Color.a);
         BaseAddress += sizeof(*Entry);
       } break;
 
@@ -700,7 +697,7 @@ inline void PushPiece(render_group *Group, loaded_bitmap *Bitmap, v2 Offset, rea
   if (Entry) {
     Entry->EntityBasis.Basis = Group->DefaultBasis;
     Entry->Bitmap = Bitmap;
-    Entry->EntityBasis.Offset = Group->MetersToPixels * V2(Offset.x, -Offset.y) - Align;
+    Entry->EntityBasis.Offset = Group->MetersToPixels * V2(Offset.x, Offset.y) - Align;
     Entry->EntityBasis.OffsetZ = OffsetZ;
     Entry->EntityBasis.EntityZC = EntityZC;
     Entry->Color = Color;
@@ -717,7 +714,7 @@ inline void PushRect(render_group *Group, v2 Offset, real32 OffsetZ, v2 Dim, v4 
     v2 HalfDim = 0.5f * Group->MetersToPixels * Dim;
 
     Entry->EntityBasis.Basis = Group->DefaultBasis;
-    Entry->EntityBasis.Offset = Group->MetersToPixels * V2(Offset.x, -Offset.y) - HalfDim;
+    Entry->EntityBasis.Offset = Group->MetersToPixels * V2(Offset.x, Offset.y) - HalfDim;
     Entry->EntityBasis.OffsetZ = OffsetZ;
     Entry->EntityBasis.EntityZC = EntityZC;
     Entry->Color = Color;
