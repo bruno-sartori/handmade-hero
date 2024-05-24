@@ -14,10 +14,14 @@
   4) Z is a special coordinate because it is broken up into discrete slices,
   and the renderer actually understands these slices (potentially).
 
+  5) All color values specified to the renderer as V4's are in
+  NON-premultiplied alpha.
+
   -> TODO: ZHANDLING
 */
 
 struct loaded_bitmap {
+  v2 Align;
   int32 Width;
   int32 Height;
   int32 Pitch;
@@ -34,9 +38,7 @@ struct render_basis {
 
 struct render_entity_basis {
   render_basis *Basis;
-  v2 Offset;
-  real32 OffsetZ;
-  real32 EntityZC;
+  v3 Offset;
 };
 
 enum render_group_entry_type {
@@ -44,7 +46,6 @@ enum render_group_entry_type {
   RenderGroupEntryType_render_entry_bitmap,
   RenderGroupEntryType_render_entry_rectangle,
   RenderGroupEntryType_render_entry_coordinate_system,
-  RenderGroupEntryType_render_entry_saturation
 };
 
 struct render_group_entry_header {
@@ -92,6 +93,18 @@ struct render_group {
   uint32 PushBufferSize;
   uint8 *PushBufferBase;
 };
+
+// NOTE: Renderer API
+
+#if 0
+inline void PushBitmap(render_group *Group, loaded_bitmap *Bitmap, v2 Offset, real32 OffsetZ, v4 Color = V4(1, 1, 1, 1));
+
+inline void PushRect(render_group *Group, v2 Offset, real32 OffsetZ, v2 Dim, v4 Color);
+
+inline void PushRectOutline(render_group *Group, v2 Offset, real32 OffsetZ, v2 Dim, v4 Color);
+
+inline void Clear(render_group *Group, v4 Color);
+#endif
 
 #define HANDMADE_RENDER_GROUP_H
 #endif
