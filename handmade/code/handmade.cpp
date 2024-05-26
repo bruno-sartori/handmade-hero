@@ -749,9 +749,11 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
     bool32 DoorDown = false;
 
     for (uint32 ScreenIndex = 0; ScreenIndex < 2000; ++ScreenIndex) {
-
-      //uint32 DoorDirection = RandomChoice(&Series, (DoorUp || DoorDown) ? 2 : 3);
+#if 1
+      uint32 DoorDirection = RandomChoice(&Series, (DoorUp || DoorDown) ? 2 : 3);
+#else
       uint32 DoorDirection = RandomChoice(&Series, 2);
+#endif
 
       bool32 CreatedZDoor = false;
 
@@ -950,6 +952,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
       }
 
       ConHero->dSword = {};
+#if 0
       if (Controller->ActionUp.EndedDown) {
         ConHero->dSword = V2(0.0f, 1.0f);
       }
@@ -962,6 +965,17 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
       if (Controller->ActionRight.EndedDown) {
         ConHero->dSword = V2(1.0f, 0.0f);
       }
+#else
+      real32 ZoomRate = 0.0f;
+      if (Controller->ActionUp.EndedDown) {
+        ZoomRate = 1.0f;
+      }
+      if (Controller->ActionDown.EndedDown) {
+        ZoomRate = -1.0f;
+      }
+
+      GameState->ZOffset += ZoomRate * Input->dtForFrame;
+#endif
     }
   }
 
@@ -971,6 +985,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
   temporary_memory RenderMemory = BeginTemporaryMemory(&TranState->TranArena);
   // TODO: Decide what our pushbuffer size is!
   render_group *RenderGroup = AllocateRenderGroup(&TranState->TranArena, Megabytes(4), GameState->MetersToPixels);
+  RenderGroup->GlobalAlpha = 1.0f; //Clamp01(1.0f - GameState->ZOffset);
 
   loaded_bitmap DrawBuffer_ = {};
   loaded_bitmap *DrawBuffer = &DrawBuffer_;
@@ -989,7 +1004,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
   real32 ScreenWidthInMeters = DrawBuffer->Width * PixelsToMeters;
   real32 ScreenHeightInMeters = DrawBuffer->Height * PixelsToMeters;
   rectangle3 CameraBoundsInMeters = RectCenterDim(V3(0, 0, 0), V3(ScreenWidthInMeters, ScreenHeightInMeters, 0.0f));
-
+#if 0
   for(uint32 GroundBufferIndex = 0; GroundBufferIndex < TranState->GroundBufferCount; ++GroundBufferIndex) {
     ground_buffer *GroundBuffer = TranState->GroundBuffers + GroundBufferIndex;
 
@@ -997,7 +1012,11 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
       loaded_bitmap *Bitmap = &GroundBuffer->Bitmap;
       v3 Delta = Subtract(GameState->World, &GroundBuffer->P, &GameState->CameraP);
       Bitmap->Align = 0.5f * V2i(Bitmap->Width, Bitmap->Height);
-      PushBitmap(RenderGroup, Bitmap, Delta);
+
+      render_basis *Basis = PushStruct(&TranState->TranArena, render_basis);
+      RenderGroup->DefaultBasis = Basis;
+      Basis->P = Delta + V3(0, 0, GameState->ZOffset);
+      PushBitmap(RenderGroup, Bitmap, V3(0, 0, 0));
     }
   }
 
@@ -1053,7 +1072,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
       }
     }
   }
-
+#endif
   // TODO: How big do we actually want to expand here?
   v3 SimBoundsExpansion = { 15.0f, 15.0f, 15.0f };
   rectangle3 SimBounds = AddRadiusTo(CameraBoundsInMeters, SimBoundsExpansion);
@@ -1200,10 +1219,10 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender) {
         MoveEntity(GameState, SimRegion, Entity, Input->dtForFrame, &MoveSpec, ddP);
       }
 
-      Basis->P = GetEntityGroundPoint(Entity);
+      Basis->P = GetEntityGroundPoint(Entity) + V3(0, 0, GameState->ZOffset); // zOffset for controlling camera position with keys
     }
   }
-#if 1
+#if 0
   GameState->Time += Input->dtForFrame;
 
   v3 MapColor[] = {
