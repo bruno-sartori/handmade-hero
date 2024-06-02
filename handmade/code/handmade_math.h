@@ -159,6 +159,17 @@ inline real32 Clamp01(real32 Value) {
   return Clamp(0.0f, Value, 1.0f);
 }
 
+inline real32 Clamp01MapToRange(real32 Min, real32 t, real32 Max) {
+  real32 Result = 0.0f;
+
+  real32 Range = Max - Min;
+  if (Range != 0.0f) {
+    Result = Clamp01((t - Min) / Range);
+  }
+
+  return Result;
+}
+
 inline real32 SafeRatioN(real32 Numerator, real32 Divisor, real32 N) {
   real32 Result = N;
 
