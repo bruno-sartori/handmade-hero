@@ -18,7 +18,7 @@ In my opinion, it's **the best** I can find.
 
 ### Day 85
 
-![](./day85.gif)
+![](https://raw.githubusercontent.com/bruno-sartori/handmade-hero/refs/heads/main/day85.gif)
 
 - We can jump 😉
 - We can shoot 🔫
