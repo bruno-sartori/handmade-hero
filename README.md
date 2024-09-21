@@ -1,4 +1,102 @@
-# game_from_scratch
+<div align="center">
+  <h1>
+    <a href="https://handmadehero.org/">Handmade Hero</a>
+  </h1>
+
+
+</div>
+
+## Intro
+
+This is my personal study notes of the awesome project [Handmade Hero](https://handmadehero.org).
+
+If you think __writing a professional-quality game from scratch on your own (no engine no library)__ is interesting and challenging, I highly recommend this project.
+
+In my opinion, it's **the best** I can find.
+
+## Showcase
+
+### Day 85
+
+![](./day85.gif)
+
+- We can jump 😉
+- We can shoot 🔫
+- We can go upstair and downstair 🏃‍♀️
+- We have a big world and many rooms 🗺
+- We have a basic procedure generated ground 🌿
+
+## Env
+
+Windows 10 with Visual Studio 2019 community version and Sublime Text 3.
+
+Build system for Sublime Text 3:
+
+```json
+{
+  "build_systems":
+  [
+    {
+      "name": "HandmadeHero",
+      "shell_cmd": "build",
+      "file_regex":"^(.+?)\\((\\d+\\))(): (error)(.+)$"
+    }
+  ]
+}
+```
+
+## Setup
+
+NOTE: **This repo does not contain copyrighted HandmadeHero assets, to build this repo, please consider preorder HandmadeHero**.
+
+- Create a `w` drive using subst: `subst w: /c/whatever_directory_you_choose`
+- Clone this repo into the root of `w`
+- Install Visual Studio 2019 community version
+- cd into `w` and init cl: `.\handmade-hero\misc\shell.bat`
+- Build and enjoy! `build`
+
+## Code Style
+
+My preferred code style for C is different from Casey's.
+
+- snake_case for types, e.g. `game_world`
+- camelCase for variables, e.g. `globalRunning`
+- PascalCase for functions and macro functions, e.g. `GameUpdateVideo`
+- UPPER_SNAKE_CASE for macro constants, e.g. `TILES_PER_CHUNK`
+- Prefix an underscore to indicate that this function should only be called with a corresponding macro, e.g. `_PushSize`
+
+## Marks
+
+- `NOTE`: Something we need to pay attention to
+- `PLAN`: Something we plan to do it later
+- `RESOURCE`: External valuable resource
+- `DIFF`: Something I have done it differently from Casey
+- `FUN`: Something interesting to know, like Windows can't correctly handle file formats they invented
+- `CASEY`: Casey's opinion about programming
+
+## Game Programming
+
+- Every memory allocation should go through a macro, it will make the debugging much easier.
+- `Premultiplied Alpha`: check day 83 for more details.
+- `Gamma Correction`: check day 94 for more details.
+- `Transform Normal`: check day 102 for more details.
+
+## Windows Programming
+
+### Command Prompt
+
+- `dir /s [keyword]`: search files
+- `findstr -s -n -i -l [keyword]`: find strings
+
+### Win32 API
+
+- `WS_EX_TOPMOST`: make window in front of others
+- `WS_EX_LAYERED` and `SetLayeredWindowAttributes `: change window alpha
+
+### Visual Studio
+
+- `Spy++`: inspect windows and messages
+
 
 ## Resources
 
